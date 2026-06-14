@@ -32,7 +32,7 @@ import type { User } from "@supabase/supabase-js"
 const sections = [
   { key: "resha", icon: Palette, color: "from-pink-500 to-rose-500" },
   { key: "atheer", icon: Film, color: "from-blue-500 to-cyan-500" },
-  { key: "midad", icon: BookOpen, color: "from-amber-500 to-orange-500" },
+  { key: "mdad", icon: BookOpen, color: "from-amber-500 to-orange-500" },
   { key: "holool", icon: Code, color: "from-emerald-500 to-green-500" },
   { key: "mahara", icon: GraduationCap, color: "from-violet-500 to-purple-500" },
   { key: "erth", icon: Camera, color: "from-sky-500 to-blue-500" },

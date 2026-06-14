@@ -29,6 +29,9 @@ export default function NewProductPage() {
   const [fileError, setFileError] = useState("");
   const [imageErrors, setImageErrors] = useState<string[]>([]);
   const [legalAgreement, setLegalAgreement] = useState(false);
+  const [mainCategory, setMainCategory] = useState("");
+  const [subCategory, setSubCategory] = useState("");
+  const [features, setFeatures] = useState("");
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -119,14 +122,15 @@ export default function NewProductPage() {
       const { error } = await supabase
         .from("products")
         .insert({
-          name: formData.name,
+          title: formData.name,
           description: formData.description,
-          price: parseFloat(formData.price),
+          price_halalas: Math.round(parseFloat(formData.price) * 100),
+          slug: formData.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') + '-' + Date.now(),
           seller_id: user.id,
-          status: "pending",
-          has_expiry: formData.hasExpiry,
-          expiry_date: formData.hasExpiry ? formData.expiryDate : null,
-          created_at: new Date().toISOString(),
+          is_published: false,
+          category: mainCategory,
+          subcategory: subCategory,
+          features: features.split('\n').filter((f: string) => f.trim()).join('|'),
         });
 
       if (error) throw error;
@@ -219,6 +223,64 @@ export default function NewProductPage() {
               {currentStep === 1 && (
                 <div className="space-y-6">
                   <div className="space-y-2">
+                    <label className="block text-sm font-medium text-right">
+                      {language === "ar" ? "القسم الرئيسي" : "Main Category"} <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      value={mainCategory}
+                      onChange={(e) => {
+                        setMainCategory(e.target.value)
+                        setSubCategory("")
+                      }}
+                      required
+                      className="w-full h-11 px-3 rounded-xl border border-border bg-background text-right font-[Cairo] text-sm"
+                      dir="rtl"
+                    >
+                      <option value="">{language === "ar" ? "اختر القسم الرئيسي" : "Select main category"}</option>
+                      <option value="الحلول الرقمية">{language === "ar" ? "الحلول الرقمية" : "Digital Solutions"}</option>
+                      <option value="الخدمات والأعمال">{language === "ar" ? "الخدمات والأعمال" : "Services & Business"}</option>
+                      <option value="المعرفة والتطوير">{language === "ar" ? "المعرفة والتطوير" : "Knowledge & Development"}</option>
+                      <option value="المجتمع">{language === "ar" ? "المجتمع" : "Community"}</option>
+                    </select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-right">
+                      {language === "ar" ? "القسم الفرعي" : "Sub Category"} <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      value={subCategory}
+                      onChange={(e) => setSubCategory(e.target.value)}
+                      required
+                      disabled={!mainCategory}
+                      className="w-full h-11 px-3 rounded-xl border border-border bg-background text-right font-[Cairo] text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                      dir="rtl"
+                    >
+                      <option value="">
+                        {mainCategory ? (language === "ar" ? "اختر القسم الفرعي" : "Select sub category") : (language === "ar" ? "اختر القسم الرئيسي أولاً" : "Select main category first")}
+                      </option>
+                      {mainCategory === "الحلول الرقمية" && <>
+                        <option value="ريشة">🎨 ريشة / Resha — {language === "ar" ? "موارد التصميم والإبداع البصري" : "Design & Visual Creativity"}</option>
+                        <option value="الأثير">🎬 الأثير / Atheer — {language === "ar" ? "إنتاج الفيديو والصوت" : "Video & Audio Production"}</option>
+                        <option value="إرث">📷 إرث / Erth — {language === "ar" ? "التصوير والأصول الرقمية" : "Photography & Digital Assets"}</option>
+                        <option value="حلول">💻 حلول / Holool — {language === "ar" ? "برمجة وتطوير تطبيقات" : "Programming & Development"}</option>
+                      </>}
+                      {mainCategory === "الخدمات والأعمال" && <>
+                        <option value="سند">🤝 سند / Sanad — {language === "ar" ? "خدمات دعم الأعمال" : "Business Support Services"}</option>
+                        <option value="صنعة">🛠️ صنعة / Sena3a — {language === "ar" ? "حرف وخدمات مهنية" : "Crafts & Professional Services"}</option>
+                        <option value="ميدان">🏆 ميدان / Maydan — {language === "ar" ? "مشاريع تنافسية" : "Competitive Projects"}</option>
+                      </>}
+                      {mainCategory === "المعرفة والتطوير" && <>
+                        <option value="مداد">✍️ مداد / Mdad — {language === "ar" ? "كتابة محتوى ونشر رقمي" : "Content Writing & Publishing"}</option>
+                        <option value="مهارة">🎓 مهارة / Mahara — {language === "ar" ? "دورات واستشارات" : "Courses & Consulting"}</option>
+                      </>}
+                      {mainCategory === "المجتمع" && <>
+                        <option value="عون">💬 عون / Awn — {language === "ar" ? "تواصل ودعم متبادل" : "Community Support"}</option>
+                      </>}
+                    </select>
+                  </div>
+
+                  <div className="space-y-2">
                     <Label htmlFor="name">
                       {language === "ar" ? "اسم المنتج" : "Product Name"} *
                     </Label>
@@ -244,6 +306,20 @@ export default function NewProductPage() {
                       required
                       placeholder={language === "ar" ? "أدخل وصف المنتج" : "Enter product description"}
                       rows={5}
+                      className="rounded-xl"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="features">
+                      {language === "ar" ? "المميزات (سطر لكل ميزة)" : "Features (one per line)"}
+                    </Label>
+                    <Textarea
+                      id="features"
+                      value={features}
+                      onChange={(e) => setFeatures(e.target.value)}
+                      placeholder={language === "ar" ? "ميزة 1\nميزة 2\nميزة 3" : "Feature 1\nFeature 2\nFeature 3"}
+                      rows={4}
                       className="rounded-xl"
                     />
                   </div>
@@ -466,7 +542,7 @@ export default function NewProductPage() {
                     onClick={() => setCurrentStep(currentStep + 1)}
                     disabled={
                       currentStep === 1 &&
-                      (!formData.name || !formData.description || !formData.price || (formData.hasExpiry && !formData.expiryDate))
+                      (!formData.name || !formData.description || !formData.price || !mainCategory || !subCategory || (formData.hasExpiry && !formData.expiryDate))
                     }
                     className="flex-1 gap-2 rounded-xl"
                   >
