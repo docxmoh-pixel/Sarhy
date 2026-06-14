@@ -1,0 +1,242 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  /* Sarhy Premium Light Theme - Royal Navy Blue Identity (#122560) */
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.25 0.08 250);
+  --card: oklch(0.98 0.005 250);
+  --card-foreground: oklch(0.25 0.08 250);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.25 0.08 250);
+  --primary: oklch(0.35 0.12 250);
+  --primary-foreground: oklch(0.98 0 0);
+  --secondary: oklch(0.96 0.01 250);
+  --secondary-foreground: oklch(0.25 0.08 250);
+  --muted: oklch(0.95 0.01 250);
+  --muted-foreground: oklch(0.50 0.05 250);
+  --accent: oklch(0.40 0.10 250);
+  --accent-foreground: oklch(0.98 0 0);
+  --destructive: oklch(0.55 0.22 25);
+  --destructive-foreground: oklch(0.98 0 0);
+  --border: oklch(0.90 0.01 250);
+  --input: oklch(0.90 0.01 250);
+  --ring: oklch(0.35 0.12 250);
+  --chart-1: oklch(0.35 0.12 250);
+  --chart-2: oklch(0.40 0.10 250);
+  --chart-3: oklch(0.45 0.08 250);
+  --chart-4: oklch(0.50 0.10 250);
+  --chart-5: oklch(0.40 0.12 250);
+  --radius: 0.75rem;
+  --sidebar: oklch(0.98 0.005 250);
+  --sidebar-foreground: oklch(0.25 0.08 250);
+  --sidebar-primary: oklch(0.35 0.12 250);
+  --sidebar-primary-foreground: oklch(0.98 0 0);
+  --sidebar-accent: oklch(0.96 0.01 250);
+  --sidebar-accent-foreground: oklch(0.25 0.08 250);
+  --sidebar-border: oklch(0.90 0.01 250);
+  --sidebar-ring: oklch(0.35 0.12 250);
+  
+  /* Custom Sarhy tokens */
+  --glass: oklch(1 0 0 / 0.8);
+  --glass-border: oklch(0.90 0.01 250 / 0.6);
+  --glow: oklch(0.35 0.12 250 / 0.4);
+  --shadow-sm: 0 1px 2px 0 oklch(0 0 0 / 0.05);
+  --shadow: 0 4px 6px -1px oklch(0 0 0 / 0.1), 0 2px 4px -2px oklch(0 0 0 / 0.1);
+  --shadow-md: 0 10px 15px -3px oklch(0 0 0 / 0.1), 0 4px 6px -4px oklch(0 0 0 / 0.1);
+  --shadow-lg: 0 20px 25px -5px oklch(0 0 0 / 0.1), 0 8px 10px -6px oklch(0 0 0 / 0.1);
+  --shadow-xl: 0 25px 50px -12px oklch(0 0 0 / 0.25);
+}
+
+.dark {
+  /* Sarhy Premium Dark Theme - Royal Navy Blue Identity (#122560) */
+  --background: oklch(0.20 0.08 250);
+  --foreground: oklch(0.95 0.01 250);
+  --card: oklch(0.25 0.08 250);
+  --card-foreground: oklch(0.95 0.01 250);
+  --popover: oklch(0.22 0.08 250);
+  --popover-foreground: oklch(0.95 0.01 250);
+  --primary: oklch(0.45 0.12 250);
+  --primary-foreground: oklch(0.20 0.08 250);
+  --secondary: oklch(0.30 0.06 250);
+  --secondary-foreground: oklch(0.95 0.01 250);
+  --muted: oklch(0.28 0.06 250);
+  --muted-foreground: oklch(0.70 0.03 250);
+  --accent: oklch(0.50 0.10 250);
+  --accent-foreground: oklch(0.20 0.08 250);
+  --destructive: oklch(0.55 0.22 25);
+  --destructive-foreground: oklch(0.95 0 0);
+  --border: oklch(0.35 0.06 250);
+  --input: oklch(0.30 0.06 250);
+  --ring: oklch(0.45 0.12 250);
+  --chart-1: oklch(0.45 0.12 250);
+  --chart-2: oklch(0.50 0.10 250);
+  --chart-3: oklch(0.55 0.08 250);
+  --chart-4: oklch(0.60 0.10 250);
+  --chart-5: oklch(0.50 0.12 250);
+  --sidebar: oklch(0.22 0.08 250);
+  --sidebar-foreground: oklch(0.95 0.01 250);
+  --sidebar-primary: oklch(0.45 0.12 250);
+  --sidebar-primary-foreground: oklch(0.20 0.08 250);
+  --sidebar-accent: oklch(0.30 0.06 250);
+  --sidebar-accent-foreground: oklch(0.95 0.01 250);
+  --sidebar-border: oklch(0.35 0.06 250);
+  --sidebar-ring: oklch(0.45 0.12 250);
+  
+  /* Custom Sarhy tokens - Dark */
+  --glass: oklch(0.25 0.08 250 / 0.85);
+  --glass-border: oklch(0.35 0.06 250 / 0.6);
+  --glow: oklch(0.45 0.12 250 / 0.3);
+  --shadow-sm: 0 1px 2px 0 oklch(0 0 0 / 0.5);
+  --shadow: 0 4px 6px -1px oklch(0 0 0 / 0.6), 0 2px 4px -2px oklch(0 0 0 / 0.5);
+  --shadow-md: 0 10px 15px -3px oklch(0 0 0 / 0.6), 0 4px 6px -4px oklch(0 0 0 / 0.5);
+  --shadow-lg: 0 20px 25px -5px oklch(0 0 0 / 0.6), 0 8px 10px -6px oklch(0 0 0 / 0.5);
+  --shadow-xl: 0 25px 50px -12px oklch(0 0 0 / 0.7);
+}
+
+@theme inline {
+  --font-sans: var(--font-ibm-plex-sans-arabic), var(--font-inter), system-ui, sans-serif;
+  --font-mono: 'Geist Mono', 'Geist Mono Fallback', monospace;
+  --font-display: var(--font-ibm-plex-sans-arabic), var(--font-inter), system-ui, sans-serif;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-glass: var(--glass);
+  --color-glass-border: var(--glass-border);
+  --color-glow: var(--glow);
+  --shadow-sm: var(--shadow-sm);
+  --shadow: var(--shadow);
+  --shadow-md: var(--shadow-md);
+  --shadow-lg: var(--shadow-lg);
+  --shadow-xl: var(--shadow-xl);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  
+  /* RTL Support */
+  [dir="rtl"] {
+    text-align: right;
+  }
+  
+  /* Smooth scrolling */
+  html {
+    scroll-behavior: smooth;
+  }
+  
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  
+  ::-webkit-scrollbar-track {
+    background: var(--muted);
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 4px;
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--muted-foreground);
+  }
+}
+
+@layer utilities {
+  /* Glassmorphism utilities */
+  .glass {
+    background: var(--glass);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+  }
+  
+  .glass-strong {
+    background: var(--glass);
+    backdrop-filter: blur(40px);
+    -webkit-backdrop-filter: blur(40px);
+    border: 1px solid var(--glass-border);
+  }
+  
+  /* Glow effects */
+  .glow {
+    box-shadow: 0 0 60px var(--glow);
+  }
+  
+  .glow-sm {
+    box-shadow: 0 0 30px var(--glow);
+  }
+  
+  /* Text gradients */
+  .text-gradient {
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  
+  /* Premium card hover */
+  .card-hover {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  .card-hover:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 20px 40px -12px var(--glow);
+  }
+  
+  /* Animation delays */
+  .animation-delay-150 {
+    animation-delay: 150ms;
+  }
+  
+  .animation-delay-300 {
+    animation-delay: 300ms;
+  }
+  
+  .animation-delay-500 {
+    animation-delay: 500ms;
+  }
+}
