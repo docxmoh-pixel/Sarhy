@@ -4,12 +4,12 @@ import { Search } from "lucide-react"
 
 export function HeroSection() {
   return (
-    <section className="w-full py-12" dir="rtl">
-      <div className="text-center px-4 mb-12">
-        <h1 className="text-5xl font-bold text-[#1e3a8a] mb-4">
+    <section className="w-full pt-24 pb-12" dir="rtl">
+      <div className="text-center px-4 mb-16">
+        <h1 className="text-6xl font-bold text-[#1e3a8a] mb-6 leading-tight">
           صرحي.. وجهتك الأولى للأعمال الرقمية والخدمات.. بلا حدود
         </h1>
-        <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+        <p className="text-xl text-gray-600 max-w-3xl mx-auto">
           منصة عالمية تجمع بين السوق الرقمي وأدوات الذكاء الاصطناعي واقتصاد المبدعين والتعليم في مكان واحد
         </p>
       </div>
