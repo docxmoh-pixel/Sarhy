@@ -9,6 +9,10 @@ interface CartItem {
   product_id: string
   user_id: string
   quantity: number
+  products: {
+    name: string
+    price: number
+  }[]
 }
 
 interface CartContextType {
@@ -43,7 +47,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
     const { data } = await supabase
       .from("cart_items")
-      .select('id, product_id, user_id, quantity')
+      .select('id, product_id, user_id, quantity, products(name, price)')
       .eq("user_id", user.id)
 
     setItems(data || [])
@@ -117,7 +121,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   }
 
   const isInCart = (productId: string) => items.some(item => item.product_id === productId)
-  const total = 0
+  const total = items.reduce((sum, item) => sum + (item.products?.[0]?.price || 0) * item.quantity, 0)
 
   return (
     <CartContext.Provider value={{ items, count: items.length, isLoading, addToCart, removeFromCart, isInCart, total }}>
