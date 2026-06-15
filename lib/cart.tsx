@@ -88,10 +88,18 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       setIsLoading(true)
       const supabase = createClient()
 
-      // ابحث عن المنتج في السلة الحالية
-      const existingItem = items.find(item => item.product_id === productId)
-      const newQuantity = existingItem ? existingItem.quantity + 1 : 1
+      // 1. جلب حالة المنتج في السلة حالياً
+      const { data: existingItem } = await supabase
+        .from("cart_items")
+        .select("quantity")
+        .eq("user_id", user.id)
+        .eq("product_id", productId)
+        .single();
 
+      // 2. حساب الكمية الجديدة
+      const newQuantity = existingItem ? existingItem.quantity + 1 : 1;
+
+      // 3. تحديث السلة
       const { error } = await supabase
         .from("cart_items")
         .upsert(
@@ -101,11 +109,13 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
             quantity: newQuantity
           },
           { onConflict: 'user_id, product_id' }
-        )
+        );
 
-      if (error) console.error("[Cart] upsert error:", error)
-      else await fetchCart() // تحديث البيانات محلياً
-
+      if (error) {
+        console.error("[Cart] upsert error:", error);
+      } else {
+        await fetchCart();
+      }
     } finally {
       setIsLoading(false)
     }
