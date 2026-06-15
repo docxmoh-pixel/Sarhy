@@ -48,7 +48,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
     const { data } = await supabase
       .from("cart_items")
-      .select("*, product:products(id, title, price_halalas, images, subcategory)")
+      .select("*, product:products(*)")
       .eq("user_id", user.id)
 
     setItems(data || [])
