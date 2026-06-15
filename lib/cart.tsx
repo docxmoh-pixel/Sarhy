@@ -74,51 +74,34 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const addToCart = async (productId: string) => {
     let user = currentUser
     if (!user) {
-      const supabase = createClient()
-      const { data } = await supabase.auth.getUser()
+      const { data } = await createClient().auth.getUser()
       user = data.user
     }
+    if (!user) { window.location.href = "/auth/login"; return }
 
-    if (!user) {
-      window.location.href = "/auth/login"
-      return
-    }
+    setIsLoading(true)
+    const supabase = createClient()
 
-    try {
-      setIsLoading(true)
-      const supabase = createClient()
+    // 1. تحديث قاعدة البيانات
+    const { data: existingItem } = await supabase
+      .from("cart_items")
+      .select("id, quantity")
+      .eq("user_id", user.id)
+      .eq("product_id", productId)
+      .maybeSingle()
 
-      // 1. نبحث عن السجل الحالي في قاعدة البيانات
-      const { data: existingItem } = await supabase
-        .from("cart_items")
-        .select("id, quantity")
-        .eq("user_id", user.id)
-        .eq("product_id", productId)
-        .maybeSingle()
-
-      if (existingItem) {
-        // إذا كان موجوداً، نحدث الكمية فقط
-        await supabase
-          .from("cart_items")
-          .update({ quantity: existingItem.quantity + 1 })
-          .eq("id", existingItem.id)
-      } else {
-        // إذا لم يكن موجوداً، نضيفه
-        await supabase
-          .from("cart_items")
-          .insert({
-            user_id: user.id,
-            product_id: productId,
-            quantity: 1
-          })
-      }
-
+    if (existingItem) {
+      await supabase.from("cart_items").update({ quantity: existingItem.quantity + 1 }).eq("id", existingItem.id)
+      // 2. تحديث الحالة المحلية فوراً
+      setItems(prev => prev.map(item =>
+        item.product_id === productId ? { ...item, quantity: item.quantity + 1 } : item
+      ))
+    } else {
+      await supabase.from("cart_items").insert({ user_id: user.id, product_id: productId, quantity: 1 })
+      // تحديث الحالة المحلية فوراً
       await fetchCart()
-    } catch (error) {
-      console.error("[Cart] Action error:", error)
-    } finally {
-      setIsLoading(false)
     }
+    setIsLoading(false)
   }
 
   const removeFromCart = async (productId: string) => {
