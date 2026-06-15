@@ -86,7 +86,6 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     setIsLoading(true)
     const supabase = createClient()
 
-    // 1. تحديث قاعدة البيانات
     const { data: existingItem } = await supabase
       .from("cart_items")
       .select("id, quantity")
@@ -96,16 +95,12 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
     if (existingItem) {
       await supabase.from("cart_items").update({ quantity: existingItem.quantity + 1 }).eq("id", existingItem.id)
-      // 2. تحديث الحالة المحلية فوراً
-      setItems(prev => prev.map(item =>
-        item.product_id === productId ? { ...item, quantity: item.quantity + 1 } : item
-      ))
     } else {
       await supabase.from("cart_items").insert({ user_id: user.id, product_id: productId, quantity: 1 })
-      // تحديث الحالة المحلية فوراً
-      await fetchCart()
     }
-    setIsLoading(false)
+
+    await fetchCart()
+    window.location.reload() // إجبار الصفحة على التحديث لضمان ظهور الحالة الجديدة
   }
 
   const removeFromCart = async (productId: string) => {
