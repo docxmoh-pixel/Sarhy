@@ -7,13 +7,8 @@ import { useLanguage } from "@/lib/language"
 interface CartItem {
   id: string
   product_id: string
-  product: {
-    id: string
-    title: string
-    price_halalas: number
-    images?: string[]
-    subcategory?: string
-  }
+  user_id: string
+  quantity: number
 }
 
 interface CartContextType {
@@ -48,7 +43,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
     const { data } = await supabase
       .from("cart_items")
-      .select("*, product:products(*)")
+      .select('id, product_id, user_id, quantity')
       .eq("user_id", user.id)
 
     setItems(data || [])
@@ -78,8 +73,6 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   const addToCart = async (productId: string) => {
     let user = currentUser
-
-    // Fallback: re-fetch user if state is null
     if (!user) {
       const supabase = createClient()
       const { data } = await supabase.auth.getUser()
@@ -94,11 +87,25 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     try {
       setIsLoading(true)
       const supabase = createClient()
+
+      // ابحث عن المنتج في السلة الحالية
+      const existingItem = items.find(item => item.product_id === productId)
+      const newQuantity = existingItem ? existingItem.quantity + 1 : 1
+
       const { error } = await supabase
         .from("cart_items")
-        .upsert({ user_id: user.id, product_id: productId }, { onConflict: 'user_id,product_id' })
-      console.log("[Cart] upsert error:", error)
-      await fetchCart()
+        .upsert(
+          {
+            user_id: user.id,
+            product_id: productId,
+            quantity: newQuantity
+          },
+          { onConflict: 'user_id, product_id' }
+        )
+
+      if (error) console.error("[Cart] upsert error:", error)
+      else await fetchCart() // تحديث البيانات محلياً
+
     } finally {
       setIsLoading(false)
     }
@@ -117,7 +124,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   }
 
   const isInCart = (productId: string) => items.some(item => item.product_id === productId)
-  const total = items.reduce((sum, item) => sum + (item.product?.price_halalas || 0), 0)
+  const total = 0
 
   return (
     <CartContext.Provider value={{ items, count: items.length, isLoading, addToCart, removeFromCart, isInCart, total }}>
