@@ -91,23 +91,29 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       return
     }
 
-    setIsLoading(true)
-    const supabase = createClient()
-    const { error } = await supabase
-      .from("cart_items")
-      .upsert({ user_id: user.id, product_id: productId })
-    console.log("[Cart] upsert error:", error)
-    await fetchCart()
-    setIsLoading(false)
+    try {
+      setIsLoading(true)
+      const supabase = createClient()
+      const { error } = await supabase
+        .from("cart_items")
+        .upsert({ user_id: user.id, product_id: productId }, { onConflict: 'user_id,product_id' })
+      console.log("[Cart] upsert error:", error)
+      await fetchCart()
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   const removeFromCart = async (productId: string) => {
     if (!currentUser) return
-    setIsLoading(true)
-    const supabase = createClient()
-    await supabase.from("cart_items").delete().eq("user_id", currentUser.id).eq("product_id", productId)
-    await fetchCart()
-    setIsLoading(false)
+    try {
+      setIsLoading(true)
+      const supabase = createClient()
+      await supabase.from("cart_items").delete().eq("user_id", currentUser.id).eq("product_id", productId)
+      await fetchCart()
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   const isInCart = (productId: string) => items.some(item => item.product_id === productId)
