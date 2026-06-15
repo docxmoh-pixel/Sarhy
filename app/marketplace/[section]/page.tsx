@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Navigation } from "@/components/navigation"
 import { Footer } from "@/components/footer"
 import { useLanguage, LanguageProvider } from "@/lib/language"
+import { useCart } from "@/lib/cart"
 import Link from "next/link"
 import { createClient } from "@/lib/supabase"
 
@@ -77,6 +78,7 @@ function CategoryContent() {
   const router = useRouter()
   const section = params.section as string
   const { language } = useLanguage()
+  const { addToCart } = useCart()
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
   const [searchQuery, setSearchQuery] = useState("")
   const [products, setProducts] = useState<any[]>([])
@@ -277,7 +279,7 @@ function CategoryContent() {
                           <span className="text-lg font-bold text-foreground">
                             {product.price_halalas ? `${(product.price_halalas / 100).toFixed(2)} ر.س` : "—"}
                           </span>
-                          <Button size="sm" className="rounded-full gap-1" onClick={(e) => { e.preventDefault(); alert(language === "ar" ? "تمت الإضافة للسلة" : "Added to cart"); }}>
+                          <Button size="sm" className="rounded-full gap-1" onClick={(e) => { e.stopPropagation(); addToCart(product.id); }}>
                             <ShoppingCart className="w-4 h-4" />
                             {language === "ar" ? "أضف" : "Add"}
                           </Button>

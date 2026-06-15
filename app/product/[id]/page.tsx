@@ -22,6 +22,7 @@ import {
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useLanguage } from "@/lib/language"
+import { useCart } from "@/lib/cart"
 import { AIAssistant } from "@/components/ai-assistant"
 import { cn } from "@/lib/utils"
 import { createClient } from "@/lib/supabase"
@@ -38,6 +39,7 @@ function ProductContent() {
   const [reportReason, setReportReason] = useState("")
   const [reportDescription, setReportDescription] = useState("")
   const [submittingReport, setSubmittingReport] = useState(false)
+  const { addToCart, isInCart, isLoading } = useCart()
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -85,143 +87,307 @@ function ProductContent() {
   const isExpired = product.has_expiry && product.expiry_date ? new Date(product.expiry_date) < new Date() : false
 
   return (
-    <div className="min-h-screen bg-background" dir="rtl">
-      {loading ? (
-        <div className="min-h-screen flex items-center justify-center">
-          <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-        </div>
-      ) : !product ? (
-        <div className="min-h-screen flex items-center justify-center">
-          <p className="text-muted-foreground">المنتج غير موجود</p>
-        </div>
-      ) : (
-        <div className="container mx-auto max-w-6xl px-6 pt-24 pb-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
-
-            {/* LEFT - Product Info */}
-            <div>
-              <span className="inline-block text-xs font-semibold px-3 py-1.5 rounded-full bg-muted text-muted-foreground mb-4">
-                {product.subcategory || product.category}
-              </span>
-
-              <h1 className="text-3xl font-black text-foreground mb-3 leading-tight text-right">
-                {product.title}
-              </h1>
-
-              <div className="flex items-center gap-4 text-sm text-muted-foreground mb-5 justify-end">
-                <span>⭐ 0.0 (0)</span>
-                <span>⬇ 0</span>
-                <span>👁 0</span>
+    <div className="min-h-screen bg-background">
+      <main className="pt-24 pb-16">
+        <div className="container mx-auto px-4 lg:px-8">
+          {/* Breadcrumb */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="flex items-center gap-2 text-sm text-muted-foreground mb-8"
+          >
+            <Link href="/marketplace" className="hover:text-foreground transition-colors">
+              {language === "ar" ? "السوق" : "Marketplace"}
+            </Link>
+            <ChevronRight className="w-4 h-4" />
+            <Link href={`/marketplace/${product.category}`} className="hover:text-foreground transition-colors">
+              {product.category}
+            </Link>
+            <ChevronRight className="w-4 h-4" />
+            <span className="text-foreground truncate max-w-[200px]">
+              {product.title}
+            </span>
+          </motion.div>
+          
+          <div className="grid lg:grid-cols-2 gap-8 lg:gap-12">
+            {/* Left Column - Images */}
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+            >
+              {/* Main Image */}
+              <div className="relative aspect-[4/3] rounded-2xl overflow-hidden glass mb-4">
+                {images.length > 0 && images[selectedImage] ? (
+                  <Image
+                    src={images[selectedImage]}
+                    alt=""
+                    fill
+                    className="object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
+                    <div className="text-6xl">📦</div>
+                  </div>
+                )}
               </div>
-
-              {/* Seller card */}
-              <div className="flex items-center justify-between p-4 border border-border rounded-2xl mb-6">
-                <button className="text-sm px-4 py-2 rounded-xl border border-border hover:bg-muted transition-colors font-medium">
-                  {language === "ar" ? "متابعة" : "Follow"}
-                </button>
-                <div className="flex items-center gap-3">
-                  <div className="text-right">
-                    <p className="text-sm font-bold text-foreground">{product.seller_name || "مبدع صرحي"}</p>
-                    <p className="text-xs text-muted-foreground">1 {language === "ar" ? "منتج" : "product"}</p>
-                  </div>
-                  <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center font-bold text-primary text-sm">
-                    م
-                  </div>
+              
+              {/* Thumbnails */}
+              {images.length > 1 && (
+                <div className="grid grid-cols-4 gap-3">
+                  {images.map((image: string, index: number) => (
+                    <button
+                      key={index}
+                      onClick={() => setSelectedImage(index)}
+                      className={cn(
+                        "relative aspect-[4/3] rounded-xl overflow-hidden transition-all",
+                        selectedImage === index 
+                          ? "ring-2 ring-primary" 
+                          : "opacity-60 hover:opacity-100"
+                      )}
+                    >
+                      <Image src={image} alt="" fill className="object-cover" />
+                    </button>
+                  ))}
                 </div>
+              )}
+            </motion.div>
+            
+            {/* Right Column - Details */}
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+            >
+              {/* Title & Category */}
+              <div className="mb-6">
+                <span className="inline-block px-3 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary mb-3">
+                  {product.subcategory}
+                </span>
+                <h1 className="text-2xl sm:text-3xl font-bold mb-4">
+                  {product.title}
+                </h1>
               </div>
-
-              {/* Price section */}
-              <div className="mb-4 text-right">
-                <p className="text-sm text-muted-foreground mb-2">{language === "ar" ? "السعر" : "Price"}</p>
-                <div className="flex items-baseline gap-2 justify-end">
-                  <span className="text-3xl font-black text-foreground">
-                    {product.price_halalas ? (product.price_halalas / 100).toFixed(2) : "0.00"}
+              
+              {/* Creator */}
+              <div className="flex items-center gap-4 p-4 rounded-xl bg-secondary/50 mb-6">
+                <div className="relative w-12 h-12 rounded-full overflow-hidden bg-primary/20 flex items-center justify-center">
+                  <span className="text-2xl">👤</span>
+                </div>
+                <div className="flex-1">
+                  <span className="font-semibold">
+                    Seller ID: {product.seller_id}
                   </span>
-                  <span className="text-muted-foreground text-lg">{language === "ar" ? "ر.س" : "SAR"}</span>
                 </div>
               </div>
 
-              {/* Action row */}
-              <div className="flex items-center gap-2 mb-6">
-                <button className="w-10 h-11 rounded-xl border border-border flex items-center justify-center hover:bg-muted transition-colors text-muted-foreground">
-                  🚩
-                </button>
-                <button className="w-10 h-11 rounded-xl border border-border flex items-center justify-center hover:bg-muted transition-colors text-muted-foreground">
-                  🔗
-                </button>
-                <button className="w-10 h-11 rounded-xl border border-border flex items-center justify-center hover:bg-muted transition-colors text-muted-foreground">
-                  ❤️
-                </button>
-                <button
-                  onClick={() => alert(language === "ar" ? "تمت الإضافة للسلة" : "Added to cart")}
-                  className="flex-1 h-11 bg-primary text-primary-foreground rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-primary/90 transition-colors"
-                >
-                  🛒 {language === "ar" ? "أضف للسلة" : "Add to cart"}
-                </button>
-              </div>
+              {/* Expiry Warning Card */}
+              {product.has_expiry && product.expiry_date && (
+                <div className="mb-6 p-4 bg-amber-50 dark:bg-amber-950/20 border-2 border-amber-500 dark:border-amber-600 rounded-xl">
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 bg-amber-500 dark:bg-amber-600 rounded-lg">
+                      <AlertCircle className="w-5 h-5 text-white" />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-bold text-amber-900 dark:text-amber-100 mb-1">
+                        {language === "ar" ? "تنبيه: هذا المنتج مؤقت" : "Warning: This product is temporary"}
+                      </h3>
+                      <p className="text-sm text-amber-800 dark:text-amber-200 mb-2">
+                        {language === "ar"
+                          ? "يرجى فحص ملصق الصلاحية فور الاستلام وقبل الاستهلاك"
+                          : "Please check the expiry label immediately upon receipt and before consumption"}
+                      </p>
+                      <div className="text-xs text-amber-700 dark:text-amber-300 font-medium">
+                        {language === "ar" ? "تاريخ انتهاء الصلاحية:" : "Expiry Date:"}{" "}
+                        {new Date(product.expiry_date).toLocaleDateString('ar-SA', {
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
 
+              {/* Price & Actions */}
+              <div className="flex items-center gap-4 mb-6">
+                <div>
+                  <div className="text-3xl font-bold">{priceInSAR} ر.س</div>
+                </div>
+
+                <div className="flex-1 flex gap-3">
+                  {!canPurchase || isExpired ? (
+                    <Button disabled className="flex-1 gap-2">
+                      <ShoppingCart className="w-4 h-4" />
+                      {isExpired
+                        ? (language === "ar" ? "منتهي الصلاحية" : "Expired")
+                        : (language === "ar" ? "غير متاح" : "Not Available")}
+                    </Button>
+                  ) : (
+                    <Button
+                      className="flex-1 gap-2 bg-gradient-to-r from-primary to-accent hover:opacity-90"
+                      onClick={async () => {
+                        console.log("[Product] addToCart clicked, product.id:", product.id)
+                        await addToCart(product.id)
+                        console.log("[Product] addToCart done")
+                      }}
+                      disabled={isLoading}
+                    >
+                      <ShoppingCart className="w-4 h-4" />
+                      {isLoading
+                        ? (language === "ar" ? "جاري الإضافة..." : "Adding...")
+                        : isInCart(product.id)
+                          ? (language === "ar" ? "في السلة ✓" : "In Cart ✓")
+                          : (language === "ar" ? "أضف للسلة" : "Add to Cart")
+                      }
+                    </Button>
+                  )}
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => setIsLiked(!isLiked)}
+                    className={cn(isLiked && "text-red-500")}
+                  >
+                    <Heart className={cn("w-5 h-5", isLiked && "fill-current")} />
+                  </Button>
+                  <Button variant="outline" size="icon">
+                    <Share2 className="w-5 h-5" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => setShowReportModal(true)}
+                    className="text-destructive hover:text-destructive"
+                  >
+                    <Flag className="w-5 h-5" />
+                  </Button>
+                </div>
+              </div>
+              
               {/* Features */}
-              {product.features && (
-                <div className="border border-border rounded-2xl p-5 mb-5">
-                  <h3 className="font-bold text-foreground mb-4 text-right">
-                    {language === "ar" ? "المميزات" : "Features"}
-                  </h3>
-                  <ul className="space-y-2.5">
-                    {product.features.split('|').filter(Boolean).map((f: string, i: number) => (
-                      <li key={i} className="flex items-center gap-2 text-sm text-foreground justify-end">
-                        <span>{f.trim()}</span>
-                        <span className="text-green-500 flex-shrink-0">✓</span>
+              {features.length > 0 && (
+                <div className="p-4 rounded-xl bg-secondary/50 mb-6">
+                  <h3 className="font-semibold mb-3">{language === "ar" ? "المميزات" : "Features"}</h3>
+                  <ul className="space-y-2">
+                    {features.map((feature: string, index: number) => (
+                      <li key={index} className="flex items-center gap-2 text-sm">
+                        <Check className="w-4 h-4 text-green-500" />
+                        {feature}
                       </li>
                     ))}
                   </ul>
                 </div>
               )}
-
+              
               {/* Description */}
-              <div className="text-right">
-                <h3 className="font-bold text-foreground mb-3">
-                  {language === "ar" ? "الوصف" : "Description"}
-                </h3>
-                <p className="text-muted-foreground leading-relaxed text-sm">{product.description}</p>
+              <div className="mb-6">
+                <h3 className="font-semibold mb-3">{language === "ar" ? "الوصف" : "Description"}</h3>
+                <p className="text-muted-foreground leading-relaxed">
+                  {product.description}
+                </p>
               </div>
+            </motion.div>
+          </div>
+        </div>
+      </main>
 
-              {/* Tags */}
-              {product.subcategory && (
-                <div className="flex flex-wrap gap-2 mt-6 justify-end">
-                  <span className="text-xs px-3 py-1 rounded-full bg-muted text-muted-foreground">#{product.subcategory}</span>
-                  <span className="text-xs px-3 py-1 rounded-full bg-muted text-muted-foreground">#{product.category}</span>
-                </div>
-              )}
-            </div>
-
-            {/* RIGHT - Images */}
-            <div>
-              {/* Main image */}
-              <div className="aspect-[4/3] bg-muted rounded-2xl overflow-hidden mb-3 flex items-center justify-center">
-                {product.images && product.images[0] ? (
-                  <img src={product.images[0]} alt={product.title} className="w-full h-full object-cover" />
-                ) : (
-                  <div className="w-full h-full bg-gradient-to-br from-purple-400 via-blue-400 to-orange-300 flex items-center justify-center">
-                    <span className="text-6xl">📦</span>
-                  </div>
-                )}
+      {/* Report Modal */}
+      {showReportModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-background rounded-2xl p-6 max-w-md w-full">
+            <h2 className="text-xl font-bold mb-4">
+              {language === "ar" ? "إبلاغ عن محتوى مخالف / تالف" : "Report Violation / Damaged Content"}
+            </h2>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-2">
+                  {language === "ar" ? "سبب الإبلاغ" : "Report Reason"}
+                </label>
+                <select
+                  value={reportReason}
+                  onChange={(e) => setReportReason(e.target.value)}
+                  className="w-full p-3 rounded-xl border border-border bg-background"
+                >
+                  <option value="">
+                    {language === "ar" ? "اختر السبب" : "Select Reason"}
+                  </option>
+                  <option value="inappropriate">
+                    {language === "ar" ? "محتوى مخالف" : "Inappropriate Content"}
+                  </option>
+                  <option value="damaged">
+                    {language === "ar" ? "منتج تالف/منتهي" : "Damaged/Expired Product"}
+                  </option>
+                  <option value="copyright">
+                    {language === "ar" ? "انتهاك حقوق" : "Copyright Violation"}
+                  </option>
+                </select>
               </div>
-
-              {/* Thumbnails */}
-              {product.images && product.images.length > 1 && (
-                <div className="grid grid-cols-4 gap-2">
-                  {product.images.slice(0, 4).map((img: string, i: number) => (
-                    <div key={i} className="aspect-square bg-muted rounded-xl overflow-hidden cursor-pointer hover:opacity-80 transition-opacity">
-                      <img src={img} alt="" className="w-full h-full object-cover" />
-                    </div>
-                  ))}
-                </div>
-              )}
+              <div>
+                <label className="block text-sm font-medium mb-2">
+                  {language === "ar" ? "الوصف (اختياري)" : "Description (Optional)"}
+                </label>
+                <textarea
+                  value={reportDescription}
+                  onChange={(e) => setReportDescription(e.target.value)}
+                  className="w-full p-3 rounded-xl border border-border bg-background"
+                  rows={3}
+                  placeholder={language === "ar" ? "أضف تفاصيل إضافية..." : "Add additional details..."}
+                />
+              </div>
             </div>
-
+            <div className="flex gap-3 mt-6">
+              <Button
+                onClick={() => setShowReportModal(false)}
+                variant="outline"
+                className="flex-1"
+              >
+                {language === "ar" ? "إلغاء" : "Cancel"}
+              </Button>
+              <Button
+                onClick={async () => {
+                  if (!reportReason) {
+                    alert(language === "ar" ? "يرجى اختيار سبب الإبلاغ" : "Please select a reason")
+                    return
+                  }
+                  setSubmittingReport(true)
+                  try {
+                    const response = await fetch("/api/reports", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({
+                        product_id: product.id,
+                        reason: reportReason,
+                        description: reportDescription,
+                      }),
+                    })
+                    if (response.ok) {
+                      alert(language === "ar" ? "تم إرسال البلاغ بنجاح" : "Report submitted successfully")
+                      setShowReportModal(false)
+                      setReportReason("")
+                      setReportDescription("")
+                    } else {
+                      throw new Error("Failed to submit report")
+                    }
+                  } catch (error) {
+                    alert(language === "ar" ? "فشل إرسال البلاغ" : "Failed to submit report")
+                  } finally {
+                    setSubmittingReport(false)
+                  }
+                }}
+                disabled={submittingReport}
+                className="flex-1 bg-destructive hover:bg-destructive/90"
+              >
+                {submittingReport
+                  ? (language === "ar" ? "جاري الإرسال..." : "Submitting...")
+                  : (language === "ar" ? "إرسال" : "Submit")}
+              </Button>
+            </div>
           </div>
         </div>
       )}
+
+      <AIAssistant />
     </div>
   )
 }

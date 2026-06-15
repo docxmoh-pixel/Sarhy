@@ -20,10 +20,12 @@ import {
   LogOut,
   LayoutDashboard,
   Sun,
-  Moon
+  Moon,
+  ShoppingCart
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useLanguage } from "@/lib/language"
+import { useCart } from "@/lib/cart"
 import { cn } from "@/lib/utils"
 import { createClient } from "@/lib/supabase"
 import { NotificationBell } from "@/components/notification-bell"
@@ -41,6 +43,7 @@ const sections = [
 
 export function Navigation() {
   const { language, setLanguage, t } = useLanguage()
+  const { count } = useCart()
   const [isScrolled, setIsScrolled] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [isMarketplaceOpen, setIsMarketplaceOpen] = useState(false)
@@ -252,6 +255,14 @@ export function Navigation() {
                 ) : user ? (
                   <div className="flex items-center gap-2">
                     <NotificationBell />
+                    <Link href="/cart" className="relative p-2 rounded-xl hover:bg-muted transition-colors">
+                      <ShoppingCart className="w-5 h-5 text-white" />
+                      {count > 0 && (
+                        <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                          {count}
+                        </span>
+                      )}
+                    </Link>
                     <Button variant="ghost" size="sm" asChild className="hidden sm:flex rounded-xl gap-2 text-white hover:text-white/80">
                       <Link href="/dashboard">
                         <LayoutDashboard className="w-4 h-4" />

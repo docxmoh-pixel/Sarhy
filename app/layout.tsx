@@ -4,6 +4,7 @@ import { Analytics } from '@vercel/analytics/next'
 import { Navigation } from '@/components/navigation'
 import { Footer } from '@/components/footer'
 import { LanguageProvider } from '@/lib/language'
+import { CartProvider } from '@/lib/cart'
 import { NotificationsProvider } from '@/components/notifications-provider'
 import { Toaster } from '@/components/ui/sonner'
 import './globals.css'
@@ -77,12 +78,14 @@ export default function RootLayout({
     <html lang="ar" dir="rtl" className="bg-background" suppressHydrationWarning>
       <body className={`${ibmPlexSansArabic.variable} ${inter.variable} font-sans antialiased`}>
         <LanguageProvider>
-          <NotificationsProvider>
-            <Navigation />
-            {children}
-            <Footer />
-            <Toaster richColors position="top-center" />
-          </NotificationsProvider>
+          <CartProvider>
+            <NotificationsProvider>
+              <Navigation />
+              {children}
+              <Footer />
+              <Toaster richColors position="top-center" />
+            </NotificationsProvider>
+          </CartProvider>
         </LanguageProvider>
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>
