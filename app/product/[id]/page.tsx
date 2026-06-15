@@ -229,8 +229,12 @@ function ProductContent() {
                       className="flex-1 gap-2 bg-gradient-to-r from-primary to-accent hover:opacity-90"
                       onClick={async () => {
                         console.log("[Product] addToCart clicked, product.id:", product.id)
-                        await addToCart(product.id)
-                        console.log("[Product] addToCart done")
+                        try {
+                          await addToCart(product.id)
+                          console.log("[Product] addToCart done")
+                        } catch (error) {
+                          console.error("[Product] Error:", error)
+                        }
                       }}
                       disabled={isLoading}
                     >
