@@ -3,23 +3,13 @@
 import { createContext, useContext, useState, useEffect, useCallback } from "react"
 import { createClient } from "@/lib/supabase"
 import { useLanguage } from "@/lib/language"
-
-interface CartItem {
-  id: string
-  product_id: string
-  user_id: string
-  quantity: number
-  products: {
-    name: string
-    price: number
-  }[]
-}
+import { Product, CartItem } from "../types/product"
 
 interface CartContextType {
   items: CartItem[]
   count: number
   isLoading: boolean
-  addToCart: (productId: string) => Promise<void>
+  addToCart: (productId: string, product?: Product) => Promise<void>
   removeFromCart: (productId: string) => Promise<void>
   isInCart: (productId: string) => boolean
   total: number
@@ -47,9 +37,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
     const { data } = await supabase
       .from("cart_items")
-      .select('id, product_id, user_id, quantity, products(name, price)')
+      .select('id, product_id, user_id, quantity, products(id, title, price_halalas)')
       .eq("user_id", user.id)
 
+    console.log('Cart Items:', data)
     setItems(data || [])
   }, [])
 
@@ -75,7 +66,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     return () => subscription.unsubscribe()
   }, [fetchCart])
 
-  const addToCart = async (productId: string) => {
+  const addToCart = async (productId: string, product?: Product) => {
     let user = currentUser
     if (!user) {
       const { data } = await createClient().auth.getUser()
@@ -95,12 +86,28 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
     if (existingItem) {
       await supabase.from("cart_items").update({ quantity: existingItem.quantity + 1 }).eq("id", existingItem.id)
+      // تحديث الحالة المحلية فوراً
+      setItems(prev => prev.map(item =>
+        item.product_id === productId ? { ...item, quantity: item.quantity + 1 } : item
+      ))
     } else {
       await supabase.from("cart_items").insert({ user_id: user.id, product_id: productId, quantity: 1 })
+      // تحديث الحالة المحلية فوراً باستخدام بيانات المنتج الممررة
+      if (product) {
+        setItems(prev => [...prev, {
+          id: crypto.randomUUID(),
+          product_id: productId,
+          user_id: user.id,
+          quantity: 1,
+          products: [product]
+        }])
+      } else {
+        // Fallback to fetchCart if product data not available
+        await fetchCart()
+      }
     }
 
-    await fetchCart()
-    window.location.reload() // إجبار الصفحة على التحديث لضمان ظهور الحالة الجديدة
+    setIsLoading(false)
   }
 
   const removeFromCart = async (productId: string) => {
@@ -116,7 +123,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   }
 
   const isInCart = (productId: string) => items.some(item => item.product_id === productId)
-  const total = items.reduce((sum, item) => sum + (item.products?.[0]?.price || 0) * item.quantity, 0)
+  const total = items.reduce((sum, item) => sum + (item.products?.[0]?.price_halalas || 0) * item.quantity, 0)
 
   return (
     <CartContext.Provider value={{ items, count: items.length, isLoading, addToCart, removeFromCart, isInCart, total }}>

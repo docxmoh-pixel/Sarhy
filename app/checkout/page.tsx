@@ -15,7 +15,7 @@ import { createClient } from "@/lib/supabase"
 interface CartItem {
   id: string
   title: { ar: string; en: string }
-  price: number
+  price_halalas: number
   quantity: number
   creator: string
 }
@@ -44,7 +44,7 @@ function CheckoutContent() {
     setLoading(false)
   }, [])
   
-  const subtotal = cartItems.reduce((sum: number, item: CartItem) => sum + item.price * item.quantity, 0)
+  const subtotal = cartItems.reduce((sum: number, item: CartItem) => sum + item.price_halalas * item.quantity, 0)
   const total = subtotal
   
   const handleSubmit = async (e: React.FormEvent) => {
@@ -317,7 +317,7 @@ function CheckoutContent() {
                         <span className="text-muted-foreground truncate pe-2">
                           {language === "ar" ? item.title.ar : item.title.en} x{item.quantity}
                         </span>
-                        <span className="text-foreground shrink-0">${item.price * item.quantity}</span>
+                        <span className="text-foreground shrink-0">${item.price_halalas * item.quantity}</span>
                       </div>
                     ))}
                   </div>

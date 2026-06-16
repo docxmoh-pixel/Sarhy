@@ -1,5 +1,7 @@
 "use client"
 
+console.log('Marketplace page loaded')
+
 import { useState } from "react"
 import { motion } from "framer-motion"
 import Image from "next/image"
