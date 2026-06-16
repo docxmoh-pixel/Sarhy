@@ -138,13 +138,12 @@ export default function ProductDetailsPage({ params }: { params: Promise<{ id: s
 
             <div className="grid grid-cols-2 gap-4 pt-6 border-t border-border">
               <div className="text-center p-4 bg-card rounded-xl border border-border">
-                <Download className="w-6 h-6 text-primary mx-auto mb-2" />
-                <p className="text-sm text-muted-foreground">تحميل فوري</p>
-              </div>
-              <div className="text-center p-4 bg-card rounded-xl border border-border">
                 <Star className="w-6 h-6 text-primary mx-auto mb-2" />
                 <p className="text-sm text-muted-foreground">تقييم عالي</p>
               </div>
+              <button className="text-center p-4 bg-card rounded-xl border border-border hover:bg-secondary transition-colors">
+                <p className="text-sm text-muted-foreground">إبلاغ عن المنتج</p>
+              </button>
             </div>
           </div>
         </div>

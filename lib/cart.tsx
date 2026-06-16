@@ -77,34 +77,21 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     setIsLoading(true)
     const supabase = createClient()
 
-    const { data: existingItem } = await supabase
-      .from("cart_items")
-      .select("id, quantity")
-      .eq("user_id", user.id)
-      .eq("product_id", productId)
-      .maybeSingle()
+    // Always insert a new item to allow duplicates
+    await supabase.from("cart_items").insert({ user_id: user.id, product_id: productId, quantity: 1 })
 
-    if (existingItem) {
-      await supabase.from("cart_items").update({ quantity: existingItem.quantity + 1 }).eq("id", existingItem.id)
-      // تحديث الحالة المحلية فوراً
-      setItems(prev => prev.map(item =>
-        item.product_id === productId ? { ...item, quantity: item.quantity + 1 } : item
-      ))
+    // تحديث الحالة المحلية فوراً باستخدام بيانات المنتج الممررة
+    if (product) {
+      setItems(prev => [...prev, {
+        id: crypto.randomUUID(),
+        product_id: productId,
+        user_id: user.id,
+        quantity: 1,
+        products: [product]
+      }])
     } else {
-      await supabase.from("cart_items").insert({ user_id: user.id, product_id: productId, quantity: 1 })
-      // تحديث الحالة المحلية فوراً باستخدام بيانات المنتج الممررة
-      if (product) {
-        setItems(prev => [...prev, {
-          id: crypto.randomUUID(),
-          product_id: productId,
-          user_id: user.id,
-          quantity: 1,
-          products: [product]
-        }])
-      } else {
-        // Fallback to fetchCart if product data not available
-        await fetchCart()
-      }
+      // Fallback to fetchCart if product data not available
+      await fetchCart()
     }
 
     setIsLoading(false)

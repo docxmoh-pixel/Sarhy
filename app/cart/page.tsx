@@ -38,17 +38,17 @@ function CartContent() {
               {items.map((item) => (
                 <div key={item.id} className="flex items-center gap-4 p-4 bg-card border border-border rounded-2xl">
                   <div className="w-20 h-20 bg-muted rounded-xl overflow-hidden flex-shrink-0 flex items-center justify-center">
-                    {item.product?.images?.[0] ? (
-                      <img src={item.product.images[0]} alt={item.product.title} className="w-full h-full object-cover" />
+                    {item.products?.[0]?.images?.[0] ? (
+                      <img src={item.products[0].images[0]} alt={item.products[0].title} className="w-full h-full object-cover" />
                     ) : (
                       <span className="text-2xl">📦</span>
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-bold text-foreground truncate">{item.product?.title}</h3>
-                    <p className="text-xs text-muted-foreground mt-1">{item.product?.subcategory}</p>
+                    <h3 className="font-bold text-foreground truncate">{item.products?.[0]?.title}</h3>
+                    <p className="text-xs text-muted-foreground mt-1">{item.products?.[0]?.subcategory}</p>
                     <p className="text-primary font-bold mt-2">
-                      {item.product?.price_halalas ? (item.product.price_halalas / 100).toFixed(2) : "0"} {language === "ar" ? "ر.س" : "SAR"}
+                      {item.products?.[0]?.price_halalas ? (item.products[0].price_halalas / 100).toFixed(2) : "0"} {language === "ar" ? "ر.س" : "SAR"}
                     </p>
                   </div>
                   <button
