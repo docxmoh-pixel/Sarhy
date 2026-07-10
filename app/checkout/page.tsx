@@ -4,7 +4,8 @@ import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
-import { ChevronLeft, ChevronRight, MapPin, CreditCard, Loader2 } from "lucide-react"
+import { ChevronLeft, ChevronRight, MapPin, CreditCard, Loader2, Smartphone, X } from "lucide-react"
+import { QRCodeSVG } from "qrcode.react"
 import { createClient } from "@/lib/supabase"
 import { useCart } from "@/lib/cart"
 import { useLanguage } from "@/lib/language"
@@ -40,6 +41,9 @@ export default function CheckoutPage() {
     amount: number
     description: string
   } | null>(null)
+  const [qrUrl, setQrUrl] = useState<string | null>(null)
+  const [showQrModal, setShowQrModal] = useState(false)
+  const [qrLoading, setQrLoading] = useState(false)
 
   const [address, setAddress] = useState({
     full_name: "",
@@ -198,6 +202,52 @@ export default function CheckoutPage() {
     } catch (err: any) {
       setError(err.message || (isAr ? "حدث خطأ أثناء معالجة الدفع" : "Payment processing error"))
       setSubmitting(false)
+    }
+  }
+
+  const handleMobilePayment = async () => {
+    if (!userId) return
+    setQrLoading(true)
+    setError(null)
+    try {
+      const { data: order, error: orderError } = await supabase
+        .from("orders")
+        .insert({
+          user_id: userId,
+          buyer_name: address.full_name,
+          buyer_email: "",
+          buyer_phone: address.phone,
+          total_halalas: total,
+          status: "pending",
+        })
+        .select()
+        .single()
+
+      if (orderError || !order) throw new Error(orderError?.message || "Order creation failed")
+
+      const orderItems = items.map((item) => ({
+        order_id: order.id,
+        product_id: item.product_id,
+        quantity: item.quantity,
+        price_halalas: item.products?.price_halalas || 0,
+      }))
+      const { error: itemsError } = await supabase.from("order_items").insert(orderItems)
+      if (itemsError) throw new Error("order_items: " + itemsError.message)
+
+      const res = await fetch("/api/payment", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amount: total, order_id: order.id }),
+      })
+      const data = await res.json()
+      if (!res.ok || !data.url) throw new Error(data.error || "Failed to get payment URL")
+
+      setQrUrl(data.url)
+      setShowQrModal(true)
+    } catch (err: any) {
+      setError(err.message || (isAr ? "حدث خطأ أثناء إنشاء رمز الدفع" : "Failed to generate payment QR"))
+    } finally {
+      setQrLoading(false)
     }
   }
 
@@ -430,15 +480,28 @@ export default function CheckoutPage() {
                         ? "ادفع بأمان عبر مدى، فيزا، ماستركارد، Apple Pay، أو STC Pay."
                         : "Pay securely via Mada, Visa, Mastercard, Apple Pay, or STC Pay."}
                     </p>
-                    <div className="flex gap-3">
-                      <Button variant="outline" onClick={() => setStep("review")} disabled={submitting}>
+                    <div className="flex flex-wrap gap-3">
+                      <Button variant="outline" onClick={() => setStep("review")} disabled={submitting || qrLoading}>
                         {isAr ? "رجوع" : "Back"}
                       </Button>
-                      <Button onClick={handlePayment} disabled={submitting} className="gap-2">
+                      <Button onClick={handlePayment} disabled={submitting || qrLoading} className="gap-2">
                         {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
                         {submitting
                           ? (isAr ? "جاري التحضير..." : "Loading...")
                           : (isAr ? "الدفع الآن" : "Pay Now")}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={handleMobilePayment}
+                        disabled={submitting || qrLoading}
+                        className="gap-2 border-primary/40 text-primary hover:bg-primary/5"
+                      >
+                        {qrLoading
+                          ? <Loader2 className="w-4 h-4 animate-spin" />
+                          : <Smartphone className="w-4 h-4" />}
+                        {qrLoading
+                          ? (isAr ? "جاري الإنشاء..." : "Generating...")
+                          : (isAr ? "ادفع بالجوال 📱" : "Pay by Mobile 📱")}
                       </Button>
                     </div>
                   </>
@@ -469,6 +532,61 @@ export default function CheckoutPage() {
           </div>
         </div>
       </div>
+
+      {/* QR Modal */}
+      {showQrModal && qrUrl && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-background rounded-2xl p-6 max-w-sm w-full shadow-xl" dir={isAr ? "rtl" : "ltr"}>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-bold flex items-center gap-2">
+                <Smartphone className="w-5 h-5 text-primary" />
+                {isAr ? "الدفع عبر الجوال" : "Pay by Mobile"}
+              </h2>
+              <button
+                onClick={() => setShowQrModal(false)}
+                className="p-1.5 rounded-lg hover:bg-secondary transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="flex justify-center mb-4 p-4 bg-white rounded-xl">
+              <QRCodeSVG
+                value={qrUrl}
+                size={200}
+                level="M"
+                includeMargin={false}
+              />
+            </div>
+
+            <p className="text-sm text-center text-muted-foreground mb-4">
+              {isAr
+                ? "افتح هذا الرابط على جوالك لإتمام الدفع بـ Apple Pay أو STC Pay"
+                : "Open this link on your phone to complete payment via Apple Pay or STC Pay"}
+            </p>
+
+            <div className="p-3 rounded-xl bg-secondary/50 break-all text-xs text-muted-foreground text-center mb-4 select-all">
+              {qrUrl}
+            </div>
+
+            <div className="flex gap-3">
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={() => setShowQrModal(false)}
+              >
+                {isAr ? "إغلاق" : "Close"}
+              </Button>
+              <Button
+                className="flex-1 gap-2"
+                onClick={() => navigator.clipboard.writeText(qrUrl)}
+              >
+                {isAr ? "نسخ الرابط" : "Copy Link"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
