@@ -21,7 +21,34 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  await supabase.auth.getUser()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (request.nextUrl.pathname.startsWith('/admin')) {
+    if (!user) {
+      return NextResponse.redirect(new URL('/auth/login', request.url))
+    }
+
+    const adminSupabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      {
+        cookies: {
+          getAll() { return request.cookies.getAll() },
+          setAll() {},
+        },
+      }
+    )
+    const { data: adminRow } = await adminSupabase
+      .from('admin_users')
+      .select('id')
+      .eq('id', user.id)
+      .single()
+
+    if (!adminRow) {
+      return NextResponse.redirect(new URL('/auth/login', request.url))
+    }
+  }
+
   return response
 }
 

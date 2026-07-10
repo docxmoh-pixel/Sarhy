@@ -1,11 +1,20 @@
 "use client"
 
+import { useState } from "react"
+import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Search } from "lucide-react"
 import { useLanguage } from "@/lib/language"
 
 export function HeroSection() {
   const { language } = useLanguage()
+  const router = useRouter()
+  const [searchQuery, setSearchQuery] = useState("")
+
+  const handleSearch = () => {
+    const q = searchQuery.trim()
+    router.push(q ? `/marketplace?q=${encodeURIComponent(q)}` : "/marketplace")
+  }
 
   const cards = [
     {
@@ -157,12 +166,16 @@ export function HeroSection() {
           <Search className="w-5 h-5 flex-shrink-0" style={{ color: "var(--color-text-secondary)" }} />
           <input
             type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleSearch()}
             placeholder="ابحث عن قوالب، خدمات، دورات..."
             dir="rtl"
             className="flex-1 border-none outline-none bg-transparent text-right"
             style={{ fontSize: "13px", fontFamily: "'Cairo', sans-serif", color: "var(--color-text-primary)" }}
           />
           <button
+            onClick={handleSearch}
             className="flex-shrink-0 text-white font-bold rounded-xl px-4 py-2"
             style={{ background: "#1e3a8a", fontSize: "12px", fontFamily: "'Cairo', sans-serif" }}
           >
@@ -170,9 +183,15 @@ export function HeroSection() {
           </button>
         </div>
         <div className="flex gap-2 justify-center flex-wrap">
-          {["🔍 أبحث عن خدمة", "💼 أريد بيع أعمالي", "💡 أحتاج استشارة", "✨ انضم كمبدع"].map((btn) => (
-            <button
-              key={btn}
+          {[
+            { label: "🔍 أبحث عن خدمة",   href: "/marketplace?q=%D8%AE%D8%AF%D9%85%D8%A9" },
+            { label: "💼 أريد بيع أعمالي", href: "/creator/dashboard/products/new" },
+            { label: "💡 أحتاج استشارة",   href: "/marketplace?q=%D8%A7%D8%B3%D8%AA%D8%B4%D8%A7%D8%B1%D8%A9" },
+            { label: "✨ انضم كمبدع",       href: "/auth/register" },
+          ].map((btn) => (
+            <Link
+              key={btn.label}
+              href={btn.href}
               className="rounded-full border transition-all"
               style={{
                 fontSize: "11px",
@@ -181,6 +200,7 @@ export function HeroSection() {
                 borderColor: "var(--color-border-secondary)",
                 background: "transparent",
                 color: "var(--color-text-secondary)",
+                textDecoration: "none",
               }}
               onMouseEnter={(e) => {
                 const el = e.currentTarget
@@ -195,32 +215,10 @@ export function HeroSection() {
                 el.style.background = "transparent"
               }}
             >
-              {btn}
-            </button>
+              {btn.label}
+            </Link>
           ))}
         </div>
-      </div>
-
-      {/* STATS */}
-      <div
-        className="flex items-center justify-center px-8 py-4"
-        style={{ borderTop: "0.5px solid var(--color-border-tertiary)" }}
-      >
-        {[
-          { num: "+50K", label: "مبدع نشط" },
-          { num: "+2M", label: "منتج رقمي" },
-          { num: "+10M", label: "عملية تحميل" },
-        ].map((stat, i) => (
-          <div key={stat.label} className="flex items-center">
-            <div className="text-center px-6">
-              <div className="font-bold" style={{ fontSize: "16px" }}>{stat.num}</div>
-              <div style={{ fontSize: "11px", color: "var(--color-text-secondary)" }}>{stat.label}</div>
-            </div>
-            {i < 2 && (
-              <div style={{ width: "0.5px", height: "28px", background: "var(--color-border-tertiary)" }} />
-            )}
-          </div>
-        ))}
       </div>
 
     </section>

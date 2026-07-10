@@ -4,9 +4,10 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase"
 import { useLanguage, LanguageProvider } from "@/lib/language"
-import { LogOut, User, Mail, Shield, ShoppingBag, Store, Package, TrendingUp, Star, LayoutDashboard, Grid } from "lucide-react"
+import { LogOut, User, Mail, Shield, ShoppingBag, Store, Package, TrendingUp, Star, LayoutDashboard, Grid, MapPin, Pencil, ClipboardList } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Image from "next/image"
+import Link from "next/link"
 import type { User as SupabaseUser } from "@supabase/supabase-js"
 
 const categories: Record<string, string[]> = {
@@ -36,7 +37,7 @@ function DashboardContent() {
       if (isSeller) {
         supabase.from("products").select("*").eq("seller_id", user.id).then(({ data }) => setProducts(data || []))
       } else {
-        supabase.from("orders").select("*").eq("buyer_id", user.id).order("created_at", { ascending: false }).then(({ data }) => setOrders(data || []))
+        supabase.from("orders").select('*, order_items(*, products(*))').eq("user_id", user.id).order("created_at", { ascending: false }).then(({ data }) => setOrders(data || []))
       }
     })
   }, [router])
@@ -110,6 +111,57 @@ function DashboardContent() {
             </div>
           </div>
         </div>
+
+        <Link
+          href="/orders"
+          className="flex items-center gap-3 p-4 rounded-2xl border border-border bg-card hover:bg-secondary/50 transition-colors mb-4"
+        >
+          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+            <ClipboardList className="w-5 h-5 text-primary" />
+          </div>
+          <div className="flex-1">
+            <p className="font-medium">
+              {language === "ar" ? "طلباتي" : "My Orders"}
+            </p>
+            <p className="text-sm text-muted-foreground">
+              {language === "ar" ? "تتبع طلباتك ومشترياتك السابقة" : "Track your orders and past purchases"}
+            </p>
+          </div>
+        </Link>
+
+        <Link
+          href="/account/addresses"
+          className="flex items-center gap-3 p-4 rounded-2xl border border-border bg-card hover:bg-secondary/50 transition-colors mb-6"
+        >
+          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+            <MapPin className="w-5 h-5 text-primary" />
+          </div>
+          <div className="flex-1">
+            <p className="font-medium">
+              {language === "ar" ? "عناويني" : "My Addresses"}
+            </p>
+            <p className="text-sm text-muted-foreground">
+              {language === "ar" ? "إدارة عناوين الشحن المحفوظة" : "Manage your saved shipping addresses"}
+            </p>
+          </div>
+        </Link>
+
+        <Link
+          href="/account/profile"
+          className="flex items-center gap-3 p-4 rounded-2xl border border-border bg-card hover:bg-secondary/50 transition-colors mb-6"
+        >
+          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+            <Pencil className="w-5 h-5 text-primary" />
+          </div>
+          <div className="flex-1">
+            <p className="font-medium">
+              {language === "ar" ? "تعديل الملف الشخصي" : "Edit Profile"}
+            </p>
+            <p className="text-sm text-muted-foreground">
+              {language === "ar" ? "تحديث الاسم، البريد، رقم الجوال" : "Update name, email, phone number"}
+            </p>
+          </div>
+        </Link>
 
         <div className={`grid gap-4 mb-6 ${role === "seller" ? "grid-cols-2 lg:grid-cols-4" : "grid-cols-3"}`}>
           {stats.map((s) => (

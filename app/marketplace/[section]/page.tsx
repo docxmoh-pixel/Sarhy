@@ -33,19 +33,15 @@ export default function CategoryPage({ params }: { params: Promise<{ section: st
   useEffect(() => {
     async function fetchProducts() {
       setLoading(true);
-      console.log('Section from URL:', section);
 
       // Get the category name in Arabic from the section parameter
       const category = sectionToCategory[section] || section;
-      console.log('Filtering by category:', category);
 
       // Fetch products by category or subcategory
       const { data, error } = await supabase
         .from('products')
         .select('*')
         .or(`category.eq.${category},subcategory.eq.${category}`);
-
-      console.log('Supabase response:', { data, error });
 
       if (data) {
         setProducts(data);

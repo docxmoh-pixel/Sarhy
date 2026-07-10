@@ -47,16 +47,12 @@ export function NotificationsProvider({
     const supabase = createClient()
     setIsLoading(true)
 
-    console.log("🔔 [NotificationsProvider] Fetching notifications for user ID:", userId)
-
     const { data } = await supabase
       .from("notifications")
       .select("*")
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
       .limit(30)
-
-    console.log("🔔 [NotificationsProvider] Fetched notifications:", data)
 
     setNotifications(data ?? [])
     setIsLoading(false)

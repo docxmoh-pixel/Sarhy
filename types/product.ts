@@ -6,6 +6,7 @@ export interface Product {
   category?: string;
   subcategory?: string;
   images?: string[];
+  fulfillment_type?: string;
 }
 
 export interface CartItem {
@@ -13,5 +14,5 @@ export interface CartItem {
   product_id: string;
   user_id: string;
   quantity: number;
-  products: Product[];
+  products: Product;
 }

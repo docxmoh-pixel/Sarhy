@@ -11,11 +11,13 @@ export default function OrderSuccessPage({ params }: { params: Promise<{ orderId
   const { orderId } = use(params);
   const [order, setOrder] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [verifyingPayment, setVerifyingPayment] = useState(false);
   const supabase = createClient();
 
   useEffect(() => {
     async function fetchOrder() {
       setLoading(true);
+
       const { data, error } = await supabase
         .from('orders')
         .select(`
@@ -28,10 +30,15 @@ export default function OrderSuccessPage({ params }: { params: Promise<{ orderId
         .eq('id', orderId)
         .single();
 
-      console.log('Order data:', { data, error });
-
       if (data) {
         setOrder(data);
+
+        if (data.status !== 'paid') {
+          setVerifyingPayment(true);
+        } else {
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user) await supabase.from('cart_items').delete().eq('user_id', user.id);
+        }
       }
       setLoading(false);
     }
@@ -40,6 +47,45 @@ export default function OrderSuccessPage({ params }: { params: Promise<{ orderId
       fetchOrder();
     }
   }, [orderId]);
+
+  // Polling for payment status
+  useEffect(() => {
+    if (!orderId || !verifyingPayment) return;
+
+    const checkStatus = setInterval(async () => {
+      const { data: order } = await supabase
+        .from('orders')
+        .select('status')
+        .eq('id', orderId)
+        .single();
+
+      if (order?.status === 'paid') {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) await supabase.from('cart_items').delete().eq('user_id', user.id);
+        clearInterval(checkStatus);
+        setVerifyingPayment(false);
+
+        // Refresh order data to show success message
+        const { data: fullOrder } = await supabase
+          .from('orders')
+          .select(`
+            *,
+            order_items (
+              *,
+              products (*)
+            )
+          `)
+          .eq('id', orderId)
+          .single();
+
+        if (fullOrder) {
+          setOrder(fullOrder);
+        }
+      }
+    }, 3000);
+
+    return () => clearInterval(checkStatus);
+  }, [orderId, verifyingPayment]);
 
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center">
@@ -50,6 +96,16 @@ export default function OrderSuccessPage({ params }: { params: Promise<{ orderId
   if (!order) return (
     <div className="min-h-screen flex items-center justify-center">
       <p className="text-muted-foreground">الطلب غير موجود</p>
+    </div>
+  );
+
+  if (verifyingPayment) return (
+    <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="text-center">
+        <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+        <p className="text-lg font-medium">جاري التحقق من الدفع...</p>
+        <p className="text-sm text-muted-foreground mt-2">يرجى الانتظار، سيتم تحديث الصفحة تلقائياً</p>
+      </div>
     </div>
   );
 
@@ -120,7 +176,7 @@ export default function OrderSuccessPage({ params }: { params: Promise<{ orderId
               <div className="flex justify-between text-lg font-bold">
                 <span>الإجمالي</span>
                 <span className="text-primary">
-                  {(order.total / 100).toFixed(2)} ر.س
+                  {(order.total_halalas / 100).toFixed(2)} ر.س
                 </span>
               </div>
             </div>

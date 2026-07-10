@@ -32,6 +32,7 @@ export default function NewProductPage() {
   const [mainCategory, setMainCategory] = useState("");
   const [subCategory, setSubCategory] = useState("");
   const [features, setFeatures] = useState("");
+  const [fulfillmentType, setFulfillmentType] = useState("digital");
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -119,6 +120,39 @@ export default function NewProductPage() {
         return;
       }
 
+      // 1. رفع الصور إلى Supabase Storage
+      const imageUrls: string[] = [];
+      if (formData.images && formData.images.length > 0) {
+        for (const image of formData.images) {
+          const ext = image.name.split('.').pop();
+          const path = `${user.id}/${Date.now()}-${Math.random().toString(36).substring(2)}.${ext}`;
+          const { error: uploadError } = await supabase.storage
+            .from('products')
+            .upload(path, image, { upsert: false });
+          if (uploadError) throw uploadError;
+          const { data: urlData } = supabase.storage
+            .from('products')
+            .getPublicUrl(path);
+          imageUrls.push(urlData.publicUrl);
+        }
+      }
+
+      // 2. رفع ملف المنتج الرقمي
+      let productFileUrl: string | null = null;
+      if (formData.file) {
+        const ext = formData.file.name.split('.').pop();
+        const path = `${user.id}/files/${Date.now()}.${ext}`;
+        const { error: fileUploadError } = await supabase.storage
+          .from('products')
+          .upload(path, formData.file, { upsert: false });
+        if (fileUploadError) throw fileUploadError;
+        const { data: fileUrlData } = supabase.storage
+          .from('products')
+          .getPublicUrl(path);
+        productFileUrl = fileUrlData.publicUrl;
+      }
+
+      // 3. إدراج المنتج مع الصور والملف
       const { error } = await supabase
         .from("products")
         .insert({
@@ -131,6 +165,9 @@ export default function NewProductPage() {
           category: mainCategory,
           subcategory: subCategory,
           features: features.split('\n').filter((f: string) => f.trim()).join('|'),
+          fulfillment_type: fulfillmentType,
+          images: imageUrls.length > 0 ? JSON.stringify(imageUrls) : null,
+          product_file_url: productFileUrl,
         });
 
       if (error) throw error;
@@ -339,6 +376,31 @@ export default function NewProductPage() {
                       placeholder={language === "ar" ? "أدخل السعر" : "Enter price"}
                       className="rounded-xl"
                     />
+                  </div>
+
+                  <div className="mb-4">
+                    <Label>{language === "ar" ? "طريقة تسليم المنتج" : "Product Fulfillment Type"}</Label>
+                    <div className="grid grid-cols-2 gap-3 mt-2">
+                      {[
+                        { value: "digital", ar: "منتج رقمي (تحميل فوري)", en: "Digital (Instant Download)" },
+                        { value: "service_remote", ar: "خدمة عن بُعد", en: "Remote Service" },
+                        { value: "physical_shipping", ar: "منتج يحتاج شحن", en: "Physical (Needs Shipping)" },
+                        { value: "service_onsite", ar: "خدمة حضورية/يدوية", en: "On-site/Manual Service" },
+                      ].map((opt) => (
+                        <button
+                          type="button"
+                          key={opt.value}
+                          onClick={() => setFulfillmentType(opt.value)}
+                          className={`p-3 rounded-xl border text-sm text-right transition-colors ${
+                            fulfillmentType === opt.value
+                              ? "border-primary bg-primary/10 font-medium"
+                              : "border-border hover:bg-secondary"
+                          }`}
+                        >
+                          {language === "ar" ? opt.ar : opt.en}
+                        </button>
+                      ))}
+                    </div>
                   </div>
 
                   <div className="space-y-2">

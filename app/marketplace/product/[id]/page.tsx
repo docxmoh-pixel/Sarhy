@@ -24,8 +24,6 @@ export default function ProductDetailsPage({ params }: { params: Promise<{ id: s
         .eq('id', id)
         .single();
 
-      console.log('Product data:', { data, error });
-
       if (data) {
         setProduct(data);
       }

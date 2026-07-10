@@ -10,5 +10,10 @@ export function createClient() {
     )
   }
 
-  return createBrowserClient(url, key)
+  return createBrowserClient(url, key, {
+    auth: { persistSession: true },
+    global: {
+      headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
+    }
+  })
 }

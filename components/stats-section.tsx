@@ -3,10 +3,8 @@
 import { motion, useMotionValue, useTransform, animate } from "framer-motion"
 import { useEffect, useState } from "react"
 import { 
-  Users, 
   Package, 
   Download, 
-  DollarSign,
   Globe,
   Zap
 } from "lucide-react"
@@ -55,14 +53,6 @@ export function StatsSection() {
   const { language, t } = useLanguage()
   const [stats, setStats] = useState([
     {
-      icon: Users,
-      value: 1,
-      suffix: "+",
-      labelAr: "مبدع نشط",
-      labelEn: "Active Creators",
-      color: "from-pink-500 to-rose-500",
-    },
-    {
       icon: Package,
       value: 0,
       suffix: "+",
@@ -77,14 +67,6 @@ export function StatsSection() {
       labelAr: "عملية تحميل",
       labelEn: "Total Downloads",
       color: "from-emerald-500 to-green-500",
-    },
-    {
-      icon: DollarSign,
-      value: 0,
-      suffix: "+",
-      labelAr: "إيرادات المبدعين",
-      labelEn: "Creator Earnings",
-      color: "from-amber-500 to-orange-500",
     },
     {
       icon: Globe,
@@ -110,26 +92,14 @@ export function StatsSection() {
         const supabase = createClient()
         
         const [
-          { count: usersCount },
           { count: productsCount },
           { count: ordersCount },
-          { count: withdrawalsCount },
         ] = await Promise.all([
-          supabase.from("users").select("*", { count: "exact", head: true }),
           supabase.from("products").select("*", { count: "exact", head: true }),
           supabase.from("orders").select("*", { count: "exact", head: true }),
-          supabase.from("withdrawal_requests").select("*", { count: "exact", head: true }),
         ])
 
         setStats([
-          {
-            icon: Users,
-            value: usersCount || 1,
-            suffix: "+",
-            labelAr: "مبدع نشط",
-            labelEn: "Active Creators",
-            color: "from-pink-500 to-rose-500",
-          },
           {
             icon: Package,
             value: productsCount || 0,
@@ -145,14 +115,6 @@ export function StatsSection() {
             labelAr: "عملية تحميل",
             labelEn: "Total Downloads",
             color: "from-emerald-500 to-green-500",
-          },
-          {
-            icon: DollarSign,
-            value: withdrawalsCount || 0,
-            suffix: "+",
-            labelAr: "إيرادات المبدعين",
-            labelEn: "Creator Earnings",
-            color: "from-amber-500 to-orange-500",
           },
           {
             icon: Globe,
@@ -203,7 +165,7 @@ export function StatsSection() {
         </motion.div>
         
         {/* Stats Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
           {stats.map((stat, index) => (
             <motion.div
               key={stat.labelEn}
