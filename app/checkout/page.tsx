@@ -2,366 +2,473 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { motion } from "framer-motion"
-import { CreditCard, Lock, Shield, Check, ArrowLeft, ArrowRight, User, Mail, Phone } from "lucide-react"
+import Link from "next/link"
+import Image from "next/image"
+import { ChevronLeft, ChevronRight, MapPin, CreditCard, Loader2 } from "lucide-react"
+import { createClient } from "@/lib/supabase"
+import { useCart } from "@/lib/cart"
+import { useLanguage } from "@/lib/language"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Separator } from "@/components/ui/separator"
-import { useLanguage } from "@/lib/language"
-import { createClient } from "@/lib/supabase"
 
-interface CartItem {
-  id: string
-  title: { ar: string; en: string }
-  price_halalas: number
-  quantity: number
-  creator: string
-}
+type Step = "address" | "review" | "payment"
 
-function CheckoutContent() {
-  const { language } = useLanguage()
-  const router = useRouter()
-  const [paymentMethod, setPaymentMethod] = useState("card")
-  const [cartItems, setCartItems] = useState<CartItem[]>([])
-  const [loading, setLoading] = useState(true)
-  const [processing, setProcessing] = useState(false)
-  
-  // Buyer form data
-  const [formData, setFormData] = useState({
-    fullName: "",
-    email: "",
-    phone: "",
-  })
-  
-  // Load cart from localStorage on mount
-  useEffect(() => {
-    const savedCart = localStorage.getItem("sarhy_cart")
-    if (savedCart) {
-      setCartItems(JSON.parse(savedCart))
-    }
-    setLoading(false)
-  }, [])
-  
-  const subtotal = cartItems.reduce((sum: number, item: CartItem) => sum + item.price_halalas * item.quantity, 0)
-  const total = subtotal
-  
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setProcessing(true)
-    
-    try {
-      // Validate form
-      if (!formData.fullName || !formData.email || !formData.phone) {
-        alert(language === "ar" ? "يرجى ملء جميع الحقول المطلوبة" : "Please fill all required fields")
-        setProcessing(false)
-        return
-      }
-      
-      if (cartItems.length === 0) {
-        alert(language === "ar" ? "السلة فارغة" : "Cart is empty")
-        setProcessing(false)
-        return
-      }
-      
-      // Create Moyasar payment via API
-      const response = await fetch("/api/checkout", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          buyer_name: formData.fullName,
-          buyer_email: formData.email,
-          buyer_phone: formData.phone,
-          items: cartItems,
-          total: total,
-        }),
-      })
-      
-      const data = await response.json()
-      
-      if (data.error) {
-        throw new Error(data.error)
-      }
-      
-      // Redirect to Moyasar payment page
-      if (data.url) {
-        window.location.href = data.url
-      } else {
-        throw new Error("No payment URL returned")
-      }
-    } catch (error) {
-      console.error("Error processing order:", error)
-      alert(language === "ar" ? "حدث خطأ أثناء معالجة الطلب" : "Error processing order")
-    } finally {
-      setProcessing(false)
-    }
-  }
-  
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
-        <main className="pt-24 pb-16">
-          <div className="container mx-auto px-4 lg:px-8 max-w-5xl">
-            <div className="text-center py-12 text-muted-foreground">
-              {language === "ar" ? "جاري التحميل..." : "Loading..."}
-            </div>
-          </div>
-        </main>
-      </div>
-    )
-  }
-  
-  if (cartItems.length === 0) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
-        <main className="pt-24 pb-16">
-          <div className="container mx-auto px-4 lg:px-8 max-w-5xl">
-            <div className="text-center py-16 bg-card rounded-2xl border border-border shadow-sm">
-              <h2 className="text-2xl font-bold text-foreground mb-2">
-                {language === "ar" ? "السلة فارغة" : "Cart is empty"}
-              </h2>
-              <p className="text-muted-foreground mb-6">
-                {language === "ar" ? "أضف منتجات إلى السلة للمتابعة" : "Add products to cart to continue"}
-              </p>
-              <button
-                onClick={() => router.push("/marketplace")}
-                className="px-6 py-2 bg-primary text-primary-foreground rounded-xl"
-              >
-                {language === "ar" ? "تصفح المنتجات" : "Browse Products"}
-              </button>
-            </div>
-          </div>
-        </main>
-      </div>
-    )
-  }
-  
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
-      <main className="pt-24 pb-16">
-        <div className="container mx-auto px-4 lg:px-8 max-w-5xl">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-8"
-          >
-            <h1 className="text-3xl font-bold text-foreground mb-2">
-              {language === "ar" ? "إتمام الشراء" : "Checkout"}
-            </h1>
-            <p className="text-muted-foreground">
-              {language === "ar" ? "أكمل طلبك بأمان" : "Complete your order securely"}
-            </p>
-          </motion.div>
-          
-          <form onSubmit={handleSubmit}>
-            <div className="grid lg:grid-cols-5 gap-8">
-              {/* Payment Form */}
-              <div className="lg:col-span-3 space-y-6">
-                {/* Buyer Information */}
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.1 }}
-                  className="bg-card rounded-2xl border border-border p-6 shadow-sm hover:shadow-md transition-all duration-300"
-                >
-                  <h2 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
-                    <User className="w-5 h-5 text-primary" />
-                    {language === "ar" ? "معلومات المشتري" : "Buyer Information"}
-                  </h2>
-                  
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="fullName">
-                        {language === "ar" ? "الاسم الكامل *" : "Full Name *"}
-                      </Label>
-                      <Input
-                        id="fullName"
-                        type="text"
-                        value={formData.fullName}
-                        onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                        placeholder={language === "ar" ? "أدخل اسمك الكامل" : "Enter your full name"}
-                        className="h-12 rounded-xl"
-                        required
-                      />
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="email">
-                        {language === "ar" ? "البريد الإلكتروني * (لإرسال المنتج والإيصال)" : "Email * (for product delivery and receipt)"}
-                      </Label>
-                      <Input
-                        id="email"
-                        type="email"
-                        value={formData.email}
-                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                        placeholder={language === "ar" ? "أدخل بريدك الإلكتروني" : "Enter your email"}
-                        className="h-12 rounded-xl"
-                        required
-                      />
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="phone">
-                        {language === "ar" ? "رقم الجوال *" : "Phone Number *"}
-                      </Label>
-                      <Input
-                        id="phone"
-                        type="tel"
-                        value={formData.phone}
-                        onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                        placeholder={language === "ar" ? "أدخل رقم جوالك" : "Enter your phone number"}
-                        className="h-12 rounded-xl"
-                        required
-                      />
-                    </div>
-                  </div>
-                </motion.div>
-                
-                {/* Payment Method */}
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.2 }}
-                  className="bg-card rounded-2xl border border-border p-6 shadow-sm hover:shadow-md transition-all duration-300"
-                >
-                  <h2 className="text-lg font-semibold text-foreground mb-4">
-                    {language === "ar" ? "طريقة الدفع" : "Payment Method"}
-                  </h2>
-                  
-                  <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod} className="space-y-3">
-                    <label className={`flex items-center gap-4 p-4 rounded-xl border cursor-pointer transition-colors ${paymentMethod === 'card' ? 'border-primary bg-primary/5' : 'border-border'}`}>
-                      <RadioGroupItem value="card" />
-                      <CreditCard className="w-5 h-5 text-muted-foreground" />
-                      <span className="text-foreground">{language === "ar" ? "بطاقة ائتمان" : "Credit Card"}</span>
-                    </label>
-                    <label className={`flex items-center gap-4 p-4 rounded-xl border cursor-pointer transition-colors ${paymentMethod === 'paypal' ? 'border-primary bg-primary/5' : 'border-border'}`}>
-                      <RadioGroupItem value="paypal" />
-                      <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M7.076 21.337H2.47a.641.641 0 0 1-.633-.74L4.944 3.72a.768.768 0 0 1 .757-.646h6.737c2.21 0 3.955.737 4.622 2.144.29.613.426 1.268.366 1.972l-.002.034c-.12 1.1-.575 2.094-1.33 2.865-.783.798-1.875 1.364-3.202 1.618-.407.078-.843.117-1.312.117H9.723l-.942 5.98a.641.641 0 0 1-.633.533H7.076z"/>
-                      </svg>
-                      <span className="text-foreground">PayPal</span>
-                    </label>
-                  </RadioGroup>
-                </motion.div>
-                
-                {/* Card Details */}
-                {paymentMethod === "card" && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.3 }}
-                    className="bg-card rounded-2xl border border-border p-6 shadow-sm hover:shadow-md transition-all duration-300"
-                  >
-                    <h2 className="text-lg font-semibold text-foreground mb-4">
-                      {language === "ar" ? "تفاصيل البطاقة" : "Card Details"}
-                    </h2>
-                    
-                    <div className="space-y-4">
-                      <div className="space-y-2">
-                        <Label>{language === "ar" ? "رقم البطاقة" : "Card Number"}</Label>
-                        <Input placeholder="1234 5678 9012 3456" className="h-12 rounded-xl" />
-                      </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label>{language === "ar" ? "تاريخ الانتهاء" : "Expiry Date"}</Label>
-                          <Input placeholder="MM/YY" className="h-12 rounded-xl" />
-                        </div>
-                        <div className="space-y-2">
-                          <Label>CVV</Label>
-                          <Input placeholder="123" className="h-12 rounded-xl" />
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        <Label>{language === "ar" ? "اسم حامل البطاقة" : "Cardholder Name"}</Label>
-                        <Input placeholder={language === "ar" ? "الاسم كما يظهر على البطاقة" : "Name as shown on card"} className="h-12 rounded-xl" />
-                      </div>
-                    </div>
-                  </motion.div>
-                )}
-                
-                {/* Security Note */}
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.4 }}
-                  className="flex items-center gap-3 p-4 bg-secondary rounded-xl"
-                >
-                  <Shield className="w-5 h-5 text-primary" />
-                  <p className="text-sm text-muted-foreground">
-                    {language === "ar" 
-                      ? "معاملاتك محمية بتشفير SSL 256-bit"
-                      : "Your transaction is secured with 256-bit SSL encryption"
-                    }
-                  </p>
-                </motion.div>
-              </div>
-              
-              {/* Order Summary */}
-              <div className="lg:col-span-2">
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.2 }}
-                  className="bg-card rounded-2xl border border-border p-6 sticky top-24 shadow-md hover:shadow-lg transition-all duration-300"
-                >
-                  <h2 className="text-lg font-semibold text-foreground mb-4">
-                    {language === "ar" ? "ملخص الطلب" : "Order Summary"}
-                  </h2>
-                  
-                  <div className="space-y-4 mb-6">
-                    {cartItems.map((item: CartItem) => (
-                      <div key={item.id} className="flex justify-between text-sm">
-                        <span className="text-muted-foreground truncate pe-2">
-                          {language === "ar" ? item.title.ar : item.title.en} x{item.quantity}
-                        </span>
-                        <span className="text-foreground shrink-0">${item.price_halalas * item.quantity}</span>
-                      </div>
-                    ))}
-                  </div>
-                  
-                  <Separator className="my-4" />
-                  
-                  <div className="flex justify-between font-semibold mb-6">
-                    <span className="text-foreground">{language === "ar" ? "الإجمالي" : "Total"}</span>
-                    <span className="text-foreground">${total}</span>
-                  </div>
-                  
-                  <Button
-                    type="submit"
-                    disabled={processing}
-                    className="w-full h-12 rounded-xl gap-2 shadow-md hover:shadow-lg transition-all duration-300"
-                  >
-                    <Lock className="w-4 h-4" />
-                    {processing
-                      ? (language === "ar" ? "جاري المعالجة..." : "Processing...")
-                      : (language === "ar" ? "ادفع الآن" : "Pay Now")} ${total}
-                  </Button>
-                  
-                  <div className="mt-4 space-y-2">
-                    {[
-                      language === "ar" ? "ضمان استرداد 30 يوم" : "30-day money-back guarantee",
-                      language === "ar" ? "دعم فني على مدار الساعة" : "24/7 customer support",
-                      language === "ar" ? "تحميل فوري بعد الدفع" : "Instant download after payment"
-                    ].map((text, i) => (
-                      <div key={i} className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <Check className="w-4 h-4 text-green-500" />
-                        {text}
-                      </div>
-                    ))}
-                  </div>
-                </motion.div>
-              </div>
-            </div>
-          </form>
-        </div>
-      </main>
-    </div>
-  )
+declare global {
+  interface Window { Moyasar: any }
 }
 
 export default function CheckoutPage() {
-  return <CheckoutContent />
+  const router = useRouter()
+  const { items, total, isLoading: cartLoading } = useCart()
+  const { language } = useLanguage()
+  const isAr = language === "ar"
+  const supabase = createClient()
+
+  const needsAddress = items.some(
+    (item) => item.products?.fulfillment_type === "physical_shipping" || item.products?.fulfillment_type === "service_onsite"
+  )
+
+  const [step, setStep] = useState<Step>("review")
+  const [userId, setUserId] = useState<string | null>(null)
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [moyasarReady, setMoyasarReady] = useState(false)
+  const [moyasarConfig, setMoyasarConfig] = useState<{
+    publishable_key: string
+    order_id: string
+    amount: number
+    description: string
+  } | null>(null)
+
+  const [address, setAddress] = useState({
+    full_name: "",
+    phone: "",
+    city: "",
+    address_line1: "",
+    address_line2: "",
+  })
+  const [savedAddresses, setSavedAddresses] = useState<any[]>([])
+  const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null)
+  const [useNewAddress, setUseNewAddress] = useState(false)
+  const [isOtherRecipient, setIsOtherRecipient] = useState(false)
+
+  useEffect(() => {
+    if (!moyasarReady || !moyasarConfig || !window.Moyasar) return
+    window.Moyasar.init({
+      element: '.mysr-form',
+      amount: moyasarConfig.amount,
+      currency: 'SAR',
+      description: moyasarConfig.description,
+      publishable_api_key: moyasarConfig.publishable_key,
+      callback_url: `${window.location.origin}/orders/success/${moyasarConfig.order_id}`,
+      methods: ['creditcard', 'applepay', 'stcpay'],
+      supported_networks: ['mada', 'visa', 'mastercard'],
+      apple_pay_label: 'صرحي',
+      apple_pay_country: 'SA',
+      apple_pay_validate_merchant_url: 'https://api.moyasar.com/v1/applepay/initiate',
+    })
+  }, [moyasarReady, moyasarConfig])
+
+  const formatSAR = (halalas: number) => (halalas / 100).toFixed(2)
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) {
+        router.push("/auth/login")
+        return
+      }
+      setUserId(user.id)
+    })
+  }, [])
+
+  useEffect(() => {
+    if (!userId) return
+    supabase
+      .from("user_addresses")
+      .select("*")
+      .eq("user_id", userId)
+      .order("is_default", { ascending: false })
+      .then(({ data }) => {
+        if (data && data.length > 0) {
+          setSavedAddresses(data)
+          const def = data.find((a) => a.is_default) || data[0]
+          setSelectedAddressId(def.id)
+          setAddress({
+            full_name: def.full_name,
+            phone: def.phone,
+            city: def.city,
+            address_line1: def.address_line1,
+            address_line2: def.address_line2 || "",
+          })
+        } else {
+          setUseNewAddress(true)
+        }
+      })
+  }, [userId])
+
+  useEffect(() => {
+    if (needsAddress) {
+      setStep("address")
+    }
+  }, [needsAddress])
+
+  const handleAddressSubmit = async () => {
+    if (!address.full_name || !address.phone || !address.city || !address.address_line1) {
+      setError(isAr ? "يرجى تعبئة جميع الحقول المطلوبة" : "Please fill in all required fields")
+      return
+    }
+    setError(null)
+
+    if (useNewAddress && !isOtherRecipient && userId) {
+      await supabase.from("user_addresses").insert({
+        user_id: userId,
+        label: isAr ? "عنوان جديد" : "New Address",
+        full_name: address.full_name,
+        phone: address.phone,
+        city: address.city,
+        address_line1: address.address_line1,
+        address_line2: address.address_line2,
+        is_default: savedAddresses.length === 0,
+      })
+    }
+
+    setStep("review")
+  }
+
+  const handlePayment = async () => {
+    if (!userId) return
+    setSubmitting(true)
+    setError(null)
+
+    try {
+      // 1. إنشاء الطلب في Supabase
+      const { data: order, error: orderError } = await supabase
+        .from("orders")
+        .insert({
+          user_id: userId,
+          buyer_name: address.full_name,
+          buyer_email: "",
+          buyer_phone: address.phone,
+          total_halalas: total,
+          status: "pending",
+        })
+        .select()
+        .single()
+
+      if (orderError || !order) throw new Error(orderError?.message || "Order creation failed")
+
+      // 2. إدراج عناصر الطلب
+      const orderItems = items.map((item) => ({
+        order_id: order.id,
+        product_id: item.product_id,
+        quantity: item.quantity,
+        price_halalas: item.products?.price_halalas || 0,
+      }))
+      const { error: itemsError } = await supabase.from("order_items").insert(orderItems)
+      if (itemsError) throw new Error('order_items: ' + itemsError.message)
+
+      // 3. الحصول على مفتاح Moyasar (NEXT_PUBLIC_ متاح في client مباشرة)
+      const publishable_key = process.env.NEXT_PUBLIC_MOYASAR_PUBLISHABLE_KEY
+      if (!publishable_key) throw new Error('Moyasar publishable key not configured')
+
+      // 4. تحميل Moyasar.js وتهيئة نموذج الدفع
+      await new Promise<void>((resolve, reject) => {
+        if (window.Moyasar) { resolve(); return }
+        const link = document.createElement('link')
+        link.rel = 'stylesheet'
+        link.href = 'https://cdn.moyasar.com/mpf/1.14.0/moyasar.css'
+        document.head.appendChild(link)
+        const script = document.createElement('script')
+        script.src = 'https://cdn.moyasar.com/mpf/1.14.0/moyasar.js'
+        script.onload = () => resolve()
+        script.onerror = () => reject(new Error('Failed to load Moyasar.js'))
+        document.head.appendChild(script)
+      })
+
+      setMoyasarConfig({
+        publishable_key,
+        order_id: order.id,
+        amount: Math.round(total),
+        description: `Order #${order.id.slice(0, 8)}`,
+      })
+      setSubmitting(false)
+      setMoyasarReady(true)
+
+    } catch (err: any) {
+      setError(err.message || (isAr ? "حدث خطأ أثناء معالجة الدفع" : "Payment processing error"))
+      setSubmitting(false)
+    }
+  }
+
+  if (cartLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    )
+  }
+
+  if (items.length === 0) {
+    return (
+      <div className="min-h-screen bg-background pt-32 pb-16 text-center">
+        <p className="text-muted-foreground mb-6">
+          {isAr ? "سلتك فارغة" : "Your cart is empty"}
+        </p>
+        <Link href="/marketplace">
+          <Button>{isAr ? "تصفح المنتجات" : "Browse Products"}</Button>
+        </Link>
+      </div>
+    )
+  }
+
+  const Arrow = isAr ? ChevronLeft : ChevronRight
+
+  return (
+    <div className="min-h-screen bg-background pt-28 pb-16">
+      <div className="container mx-auto px-4 lg:px-8 max-w-5xl">
+        <h1 className="text-2xl sm:text-3xl font-bold mb-2">
+          {isAr ? "إتمام الشراء" : "Checkout"}
+        </h1>
+
+        {/* Stepper */}
+        <div className="flex items-center gap-2 mb-8 text-sm">
+          {(needsAddress
+            ? [
+                { key: "address", label: isAr ? "العنوان" : "Address" },
+                { key: "review", label: isAr ? "المراجعة" : "Review" },
+                { key: "payment", label: isAr ? "الدفع" : "Payment" },
+              ]
+            : [
+                { key: "review", label: isAr ? "المراجعة" : "Review" },
+                { key: "payment", label: isAr ? "الدفع" : "Payment" },
+              ]
+          ).map((s, i) => (
+            <div key={s.key} className="flex items-center gap-2">
+              <div
+                className={`w-7 h-7 rounded-full flex items-center justify-center font-medium ${
+                  step === s.key
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-secondary text-muted-foreground"
+                }`}
+              >
+                {i + 1}
+              </div>
+              <span className={step === s.key ? "font-medium" : "text-muted-foreground"}>
+                {s.label}
+              </span>
+              {i < 2 && <div className="w-8 h-px bg-border mx-2" />}
+            </div>
+          ))}
+        </div>
+
+        {error && (
+          <div className="mb-6 p-4 rounded-xl bg-destructive/10 text-destructive text-sm">
+            {error}
+          </div>
+        )}
+
+        <div className="grid lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-2 space-y-6">
+            {step === "address" && (
+              <div className="p-6 rounded-2xl border border-border bg-card space-y-4">
+                <div className="flex items-center gap-2 font-semibold mb-2">
+                  <MapPin className="w-5 h-5 text-primary" />
+                  {isAr ? "عنوان الشحن" : "Shipping Address"}
+                </div>
+
+                {savedAddresses.length > 0 && !useNewAddress && (
+                  <div className="space-y-3">
+                    {savedAddresses.map((addr) => (
+                      <button
+                        key={addr.id}
+                        onClick={() => {
+                          setSelectedAddressId(addr.id)
+                          setIsOtherRecipient(false)
+                          setAddress({
+                            full_name: addr.full_name,
+                            phone: addr.phone,
+                            city: addr.city,
+                            address_line1: addr.address_line1,
+                            address_line2: addr.address_line2 || "",
+                          })
+                        }}
+                        className={`w-full text-right p-4 rounded-xl border transition-colors ${
+                          selectedAddressId === addr.id && !isOtherRecipient
+                            ? "border-primary bg-primary/5"
+                            : "border-border hover:bg-secondary"
+                        }`}
+                      >
+                        <p className="font-medium">{addr.label} — {addr.full_name}</p>
+                        <p className="text-sm text-muted-foreground">{addr.phone}</p>
+                        <p className="text-sm text-muted-foreground">{addr.address_line1}, {addr.city}</p>
+                      </button>
+                    ))}
+
+                    <button
+                      onClick={() => {
+                        setIsOtherRecipient(true)
+                        setSelectedAddressId(null)
+                        setAddress({ full_name: "", phone: "", city: "", address_line1: "", address_line2: "" })
+                      }}
+                      className={`w-full text-right p-4 rounded-xl border transition-colors ${
+                        isOtherRecipient ? "border-primary bg-primary/5" : "border-border hover:bg-secondary"
+                      }`}
+                    >
+                      <p className="font-medium">{isAr ? "استلام لشخص آخر" : "Deliver to someone else"}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {isAr ? "أدخل بيانات مستلم مختلف" : "Enter different recipient details"}
+                      </p>
+                    </button>
+
+                    <button
+                      onClick={() => setUseNewAddress(true)}
+                      className="text-sm text-primary hover:underline"
+                    >
+                      {isAr ? "+ إضافة عنوان جديد" : "+ Add new address"}
+                    </button>
+                  </div>
+                )}
+
+                {(useNewAddress || isOtherRecipient || savedAddresses.length === 0) && (
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    <div>
+                      <Label>{isAr ? "الاسم الكامل" : "Full Name"}</Label>
+                      <Input
+                        value={address.full_name}
+                        onChange={(e) => setAddress({ ...address, full_name: e.target.value })}
+                      />
+                    </div>
+                    <div>
+                      <Label>{isAr ? "رقم الجوال" : "Phone Number"}</Label>
+                      <Input
+                        value={address.phone}
+                        onChange={(e) => setAddress({ ...address, phone: e.target.value })}
+                      />
+                    </div>
+                    <div>
+                      <Label>{isAr ? "المدينة" : "City"}</Label>
+                      <Input
+                        value={address.city}
+                        onChange={(e) => setAddress({ ...address, city: e.target.value })}
+                      />
+                    </div>
+                    <div>
+                      <Label>{isAr ? "العنوان التفصيلي" : "Address Line"}</Label>
+                      <Input
+                        value={address.address_line1}
+                        onChange={(e) => setAddress({ ...address, address_line1: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {savedAddresses.length > 0 && useNewAddress && (
+                  <button
+                    onClick={() => setUseNewAddress(false)}
+                    className="text-sm text-muted-foreground hover:underline"
+                  >
+                    {isAr ? "إلغاء واستخدام عنوان محفوظ" : "Cancel and use saved address"}
+                  </button>
+                )}
+
+                <Button onClick={handleAddressSubmit} className="gap-2 mt-2">
+                  {isAr ? "متابعة" : "Continue"}
+                  <Arrow className="w-4 h-4" />
+                </Button>
+              </div>
+            )}
+
+            {step === "review" && (
+              <div className="p-6 rounded-2xl border border-border bg-card space-y-4">
+                <h2 className="font-semibold mb-2">{isAr ? "مراجعة الطلب" : "Review Order"}</h2>
+                {items.map((item) => (
+                  <div key={item.id} className="flex justify-between items-center py-2 border-b border-border last:border-0">
+                    <div>
+                      <p className="font-medium">{item.products?.title}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {isAr ? "الكمية" : "Qty"}: {item.quantity}
+                      </p>
+                    </div>
+                    <span className="font-semibold">
+                      {formatSAR((item.products?.price_halalas || 0) * item.quantity)} {isAr ? "ر.س" : "SAR"}
+                    </span>
+                  </div>
+                ))}
+                {needsAddress && (
+                  <div className="pt-2 text-sm text-muted-foreground">
+                    <p className="font-medium text-foreground mb-1">{isAr ? "الشحن إلى" : "Shipping to"}</p>
+                    <p>{address.full_name} — {address.phone}</p>
+                    <p>{address.address_line1}, {address.city}</p>
+                  </div>
+                )}
+                <div className="flex gap-3">
+                  {needsAddress && (
+                    <Button variant="outline" onClick={() => setStep("address")}>
+                      {isAr ? "رجوع" : "Back"}
+                    </Button>
+                  )}
+                  <Button onClick={() => setStep("payment")} className="gap-2">
+                    {isAr ? "متابعة للدفع" : "Continue to Payment"}
+                    <Arrow className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {step === "payment" && (
+              <div className="p-6 rounded-2xl border border-border bg-card space-y-4">
+                <div className="flex items-center gap-2 font-semibold mb-2">
+                  <CreditCard className="w-5 h-5 text-primary" />
+                  {isAr ? "طريقة الدفع" : "Payment Method"}
+                </div>
+
+                {!moyasarReady ? (
+                  <>
+                    <p className="text-sm text-muted-foreground">
+                      {isAr
+                        ? "ادفع بأمان عبر مدى، فيزا، ماستركارد، Apple Pay، أو STC Pay."
+                        : "Pay securely via Mada, Visa, Mastercard, Apple Pay, or STC Pay."}
+                    </p>
+                    <div className="flex gap-3">
+                      <Button variant="outline" onClick={() => setStep("review")} disabled={submitting}>
+                        {isAr ? "رجوع" : "Back"}
+                      </Button>
+                      <Button onClick={handlePayment} disabled={submitting} className="gap-2">
+                        {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
+                        {submitting
+                          ? (isAr ? "جاري التحضير..." : "Loading...")
+                          : (isAr ? "الدفع الآن" : "Pay Now")}
+                      </Button>
+                    </div>
+                  </>
+                ) : (
+                  <div className="mysr-form" />
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Order Summary Sidebar */}
+          <div className="lg:col-span-1">
+            <div className="sticky top-28 p-6 rounded-2xl border border-border bg-card space-y-4">
+              <h2 className="font-semibold">{isAr ? "ملخص الطلب" : "Order Summary"}</h2>
+              <div className="space-y-2 text-sm">
+                {items.map((item) => (
+                  <div key={item.id} className="flex justify-between text-muted-foreground">
+                    <span className="line-clamp-1">{item.products?.title} × {item.quantity}</span>
+                    <span>{formatSAR((item.products?.price_halalas || 0) * item.quantity)}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="border-t border-border pt-4 flex justify-between font-bold text-lg">
+                <span>{isAr ? "الإجمالي" : "Total"}</span>
+                <span className="text-primary">{formatSAR(total)} {isAr ? "ر.س" : "SAR"}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
 }
