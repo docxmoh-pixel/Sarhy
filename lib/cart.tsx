@@ -2,7 +2,6 @@
 
 import { createContext, useContext, useState, useEffect, useCallback } from "react"
 import { createClient } from "@/lib/supabase"
-import { useLanguage } from "@/lib/language"
 import { Product, CartItem } from "../types/product"
 
 interface CartContextType {
@@ -45,24 +44,16 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       .eq("user_id", user.id)
 
     if (error) {
-      console.error("[Cart] cart_items error:", error.message, error.code)
+      console.error("[Cart] cart_items error:", error.message)
       return
     }
-
-    if (!cartRows || cartRows.length === 0) {
-      setItems([])
-      return
-    }
+    if (!cartRows || cartRows.length === 0) { setItems([]); return }
 
     const productIds = [...new Set(cartRows.map((r) => r.product_id))]
-    const { data: products, error: prodError } = await supabase
+    const { data: products } = await supabase
       .from("products")
       .select("*")
       .in("id", productIds)
-
-    if (prodError) {
-      console.error("[Cart] products error:", prodError.message)
-    }
 
     setItems(
       cartRows.map((row) => ({
@@ -74,23 +65,14 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const supabase = createClient()
-
-    // Get initial user
     supabase.auth.getUser().then(({ data: { user } }) => {
       setCurrentUser(user)
       if (user) fetchCart()
     })
-
-    // Listen for changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setCurrentUser(session?.user ?? null)
-      if (session?.user) {
-        fetchCart()
-      } else {
-        setItems([])
-      }
+      if (session?.user) { fetchCart() } else { setItems([]) }
     })
-
     return () => subscription.unsubscribe()
   }, [fetchCart])
 
@@ -105,48 +87,32 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     setIsLoading(true)
     const supabase = createClient()
 
-    // 1. نبحث أولاً عن المنتج في السلة
     const { data: existingItem } = await supabase
       .from("cart_items")
       .select("id, quantity")
       .eq("user_id", user.id)
       .eq("product_id", productId)
-      .single();
+      .maybeSingle()
 
     if (existingItem) {
-      // 2. إذا وجدناه، نحدث الكمية
-      await supabase
-        .from("cart_items")
-        .update({ quantity: existingItem.quantity + 1 })
-        .eq("id", existingItem.id);
-
-      // تحديث الحالة المحلية
+      await supabase.from("cart_items").update({ quantity: existingItem.quantity + 1 }).eq("id", existingItem.id)
       setItems(prev => prev.map(item =>
-        item.id === existingItem.id
-          ? { ...item, quantity: item.quantity + 1 }
-          : item
+        item.id === existingItem.id ? { ...item, quantity: item.quantity + 1 } : item
       ))
     } else {
-      // 3. إذا لم نجده، نضيفه لأول مرة
-      const { error } = await supabase
-        .from("cart_items")
-        .insert({ user_id: user.id, product_id: productId, quantity: 1 });
-
-      // تحديث الحالة المحلية فوراً باستخدام بيانات المنتج الممررة
+      await supabase.from("cart_items").insert({ user_id: user.id, product_id: productId, quantity: 1 })
       if (product) {
         setItems(prev => [...prev, {
           id: crypto.randomUUID(),
           product_id: productId,
           user_id: user.id,
           quantity: 1,
-          products: product
+          products: product,
         }])
       } else {
-        // Fallback to fetchCart if product data not available
         await fetchCart()
       }
     }
-
     setIsLoading(false)
   }
 
@@ -154,9 +120,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     if (!currentUser) return
     try {
       setIsLoading(true)
-      const supabase = createClient()
-      await supabase.from("cart_items").delete().eq("id", itemId)
-      await fetchCart()
+      await createClient().from("cart_items").delete().eq("id", itemId)
+      setItems(prev => prev.filter(item => item.id !== itemId))
     } finally {
       setIsLoading(false)
     }
@@ -164,26 +129,11 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   const updateQuantity = async (itemId: string, newQuantity: number) => {
     if (!currentUser) return
-    if (newQuantity < 1) {
-      // If quantity is 0 or less, remove the item
-      await removeFromCart(itemId)
-      return
-    }
-
+    if (newQuantity < 1) { await removeFromCart(itemId); return }
     try {
       setIsLoading(true)
-      const supabase = createClient()
-      await supabase
-        .from("cart_items")
-        .update({ quantity: newQuantity })
-        .eq("id", itemId)
-
-      // تحديث الحالة المحلية
-      setItems(prev => prev.map(item =>
-        item.id === itemId
-          ? { ...item, quantity: newQuantity }
-          : item
-      ))
+      await createClient().from("cart_items").update({ quantity: newQuantity }).eq("id", itemId)
+      setItems(prev => prev.map(item => item.id === itemId ? { ...item, quantity: newQuantity } : item))
     } finally {
       setIsLoading(false)
     }
