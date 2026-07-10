@@ -39,6 +39,7 @@ function ProductContent() {
   const [reportReason, setReportReason] = useState("")
   const [reportDescription, setReportDescription] = useState("")
   const [submittingReport, setSubmittingReport] = useState(false)
+  const [sellerName, setSellerName] = useState<string | null>(null)
   const { addToCart, isInCart, isLoading } = useCart()
 
   useEffect(() => {
@@ -58,6 +59,14 @@ function ProductContent() {
         }
 
         setProduct(productData)
+
+        if (productData.seller_id) {
+          const res = await fetch(`/api/seller?id=${productData.seller_id}`)
+          if (res.ok) {
+            const json = await res.json()
+            setSellerName(json.name ?? null)
+          }
+        }
       } catch (error) {
         console.error("Error fetching product:", error)
         router.push("/marketplace")
@@ -70,8 +79,26 @@ function ProductContent() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen bg-background pt-24 pb-16">
+        <div className="container mx-auto px-4 lg:px-8">
+          <div className="h-5 w-48 bg-muted/50 rounded animate-pulse mb-8" />
+          <div className="grid lg:grid-cols-2 gap-8 lg:gap-12">
+            <div className="space-y-4">
+              <div className="aspect-[4/3] rounded-2xl bg-muted/50 animate-pulse" />
+              <div className="grid grid-cols-4 gap-3">
+                {[0,1,2,3].map(i => <div key={i} className="aspect-[4/3] rounded-xl bg-muted/40 animate-pulse" />)}
+              </div>
+            </div>
+            <div className="space-y-4">
+              <div className="h-4 w-24 bg-muted/50 rounded-full animate-pulse" />
+              <div className="h-9 bg-muted/50 rounded animate-pulse" />
+              <div className="h-9 w-3/4 bg-muted/50 rounded animate-pulse" />
+              <div className="h-20 rounded-xl bg-muted/40 animate-pulse" />
+              <div className="h-12 rounded-xl bg-muted/40 animate-pulse" />
+              <div className="h-32 rounded-xl bg-muted/30 animate-pulse" />
+            </div>
+          </div>
+        </div>
       </div>
     )
   }
@@ -174,8 +201,13 @@ function ProductContent() {
                 </div>
                 <div className="flex-1">
                   <span className="font-semibold">
-                    Seller ID: {product.seller_id}
+                    {sellerName ?? product.seller_id?.slice(0, 8)}
                   </span>
+                  {sellerName && (
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {language === "ar" ? "البائع" : "Seller"}
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -227,15 +259,7 @@ function ProductContent() {
                   ) : (
                     <Button
                       className="flex-1 gap-2 bg-gradient-to-r from-primary to-accent hover:opacity-90"
-                      onClick={async () => {
-                        console.log("[Product] addToCart clicked, product.id:", product.id)
-                        try {
-                          await addToCart(product.id)
-                          console.log("[Product] addToCart done")
-                        } catch (error) {
-                          console.error("[Product] Error:", error)
-                        }
-                      }}
+                      onClick={() => addToCart(product.id)}
                       disabled={isLoading}
                     >
                       <ShoppingCart className="w-4 h-4" />

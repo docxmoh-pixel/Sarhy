@@ -408,7 +408,7 @@ export default function CheckoutPage() {
                       {isAr ? "رجوع" : "Back"}
                     </Button>
                   )}
-                  <Button onClick={() => setStep("payment")} className="gap-2">
+                  <Button onClick={() => { setStep("payment") }} className="gap-2">
                     {isAr ? "متابعة للدفع" : "Continue to Payment"}
                     <Arrow className="w-4 h-4" />
                   </Button>

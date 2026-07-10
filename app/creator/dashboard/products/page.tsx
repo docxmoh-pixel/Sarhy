@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase";
 import { useLanguage } from "@/lib/language";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Package, Plus, Edit, Trash2 } from "lucide-react";
+import { ArrowLeft, Package, Plus, Edit, Trash2, Eye, EyeOff } from "lucide-react";
 
 export default function ProductsPage() {
   const { language, direction } = useLanguage();
@@ -54,6 +54,23 @@ export default function ProductsPage() {
 
     fetchData();
   }, [router]);
+
+  const handleTogglePublish = async (productId: string, current: boolean) => {
+    try {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { error } = await supabase
+        .from("products")
+        .update({ is_published: !current })
+        .eq("id", productId)
+        .eq("seller_id", user.id);
+      if (error) throw error;
+      setProducts(prev => prev.map(p => p.id === productId ? { ...p, is_published: !current } : p));
+    } catch (error) {
+      console.error("Toggle publish error:", error);
+    }
+  };
 
   const handleDelete = async (productId: string) => {
     if (!confirm(language === "ar" ? "هل أنت متأكد من حذف هذا المنتج؟" : "Are you sure you want to delete this product?")) {
@@ -237,7 +254,21 @@ export default function ProductsPage() {
                       </div>
                     </CardHeader>
                     <CardContent>
-                      <div className="flex gap-3">
+                      <div className="flex gap-3 flex-wrap">
+                        <Button
+                          size="sm"
+                          onClick={() => handleTogglePublish(product.id, product.is_published)}
+                          className={`gap-2 rounded-xl ${
+                            product.is_published
+                              ? "bg-green-600 hover:bg-green-700 text-white"
+                              : "bg-secondary text-muted-foreground hover:bg-secondary/80"
+                          }`}
+                        >
+                          {product.is_published
+                            ? <><Eye className="w-4 h-4" />{language === "ar" ? "منشور ✓" : "Published ✓"}</>
+                            : <><EyeOff className="w-4 h-4" />{language === "ar" ? "غير منشور" : "Unpublished"}</>
+                          }
+                        </Button>
                         <Button
                           variant="outline"
                           size="sm"
