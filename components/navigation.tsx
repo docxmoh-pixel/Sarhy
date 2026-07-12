@@ -209,7 +209,7 @@ export function Navigation() {
                 {t("nav.enterprise")}
               </Link>
               
-              <Link href="#enterprise" className="px-4 py-2 text-sm font-medium text-white/90 hover:text-white transition-colors">
+              <Link href="/pricing" className="px-4 py-2 text-sm font-medium text-white/90 hover:text-white transition-colors">
                 {t("nav.pricing")}
               </Link>
             </div>

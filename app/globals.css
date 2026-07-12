@@ -154,12 +154,18 @@
   body {
     @apply bg-background text-foreground;
   }
-  
+
+  /* Prevent horizontal overflow globally */
+  html, body {
+    overflow-x: hidden;
+    max-width: 100vw;
+  }
+
   /* RTL Support */
   [dir="rtl"] {
     text-align: right;
   }
-  
+
   /* Smooth scrolling */
   html {
     scroll-behavior: smooth;

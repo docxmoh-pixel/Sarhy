@@ -150,14 +150,18 @@ function HelpContent() {
               {language === "ar" ? "تواصل مع فريق الدعم الفني" : "Contact our support team"}
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button className="rounded-full gap-2">
-                <MessageCircle className="w-4 h-4" />
-                {language === "ar" ? "محادثة مباشرة" : "Live Chat"}
-              </Button>
-              <Button variant="outline" className="rounded-full gap-2">
-                <Mail className="w-4 h-4" />
-                {language === "ar" ? "راسلنا" : "Email Us"}
-              </Button>
+              <Link href="/contact">
+                <Button className="rounded-full gap-2">
+                  <MessageCircle className="w-4 h-4" />
+                  {language === "ar" ? "محادثة مباشرة" : "Live Chat"}
+                </Button>
+              </Link>
+              <a href="mailto:support@sarhy.com">
+                <Button variant="outline" className="rounded-full gap-2">
+                  <Mail className="w-4 h-4" />
+                  {language === "ar" ? "راسلنا" : "Email Us"}
+                </Button>
+              </a>
             </div>
           </motion.div>
         </section>

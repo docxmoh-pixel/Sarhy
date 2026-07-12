@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Navigation } from "@/components/navigation"
 import { Footer } from "@/components/footer"
 import { useLanguage, LanguageProvider } from "@/lib/language"
+import Link from "next/link"
 
 const features = [
   { icon: Shield, title: { ar: "أمان على مستوى المؤسسات", en: "Enterprise-grade Security" }, desc: { ar: "تشفير متقدم وامتثال للمعايير العالمية", en: "Advanced encryption and global compliance" } },
@@ -60,13 +61,17 @@ function EnterpriseContent() {
               }
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button size="lg" className="rounded-full h-12 px-8 gap-2">
-                {language === "ar" ? "احجز عرض توضيحي" : "Book a Demo"}
-                <Arrow className="w-4 h-4" />
-              </Button>
-              <Button size="lg" variant="outline" className="rounded-full h-12 px-8">
-                {language === "ar" ? "تحدث مع المبيعات" : "Talk to Sales"}
-              </Button>
+              <Link href="/contact">
+                <Button size="lg" className="rounded-full h-12 px-8 gap-2">
+                  {language === "ar" ? "احجز عرض توضيحي" : "Book a Demo"}
+                  <Arrow className="w-4 h-4" />
+                </Button>
+              </Link>
+              <Link href="/contact">
+                <Button size="lg" variant="outline" className="rounded-full h-12 px-8">
+                  {language === "ar" ? "تحدث مع المبيعات" : "Talk to Sales"}
+                </Button>
+              </Link>
             </div>
           </motion.div>
         </section>

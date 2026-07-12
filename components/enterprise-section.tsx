@@ -4,6 +4,7 @@ import { motion } from "framer-motion"
 import { ArrowUpRight, Building2, Shield, Zap, Globe } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useLanguage } from "@/lib/language"
+import Link from "next/link"
 
 const features = [
   {
@@ -100,13 +101,17 @@ export function EnterpriseSection() {
             </div>
             
             <div className="flex flex-wrap gap-4">
-              <Button size="lg" className="bg-gradient-to-r from-primary to-accent hover:opacity-90 gap-2">
-                {language === "ar" ? "تواصل مع المبيعات" : "Contact Sales"}
-                <ArrowUpRight className="w-4 h-4" />
-              </Button>
-              <Button size="lg" variant="outline">
-                {language === "ar" ? "عرض الباقات" : "View Plans"}
-              </Button>
+              <Link href="/contact">
+                <Button size="lg" className="bg-gradient-to-r from-primary to-accent hover:opacity-90 gap-2">
+                  {language === "ar" ? "تواصل مع المبيعات" : "Contact Sales"}
+                  <ArrowUpRight className="w-4 h-4" />
+                </Button>
+              </Link>
+              <Link href="/pricing">
+                <Button size="lg" variant="outline">
+                  {language === "ar" ? "عرض الباقات" : "View Plans"}
+                </Button>
+              </Link>
             </div>
           </motion.div>
         </div>

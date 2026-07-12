@@ -1,7 +1,7 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
+import { useState, useEffect, Suspense } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
 import { ChevronLeft, ChevronRight, MapPin, CreditCard, Loader2, Smartphone, X } from "lucide-react"
@@ -16,11 +16,12 @@ import { Label } from "@/components/ui/label"
 type Step = "address" | "review" | "payment"
 
 declare global {
-  interface Window { Moyasar: any }
+  interface Window { tapjs: any }
 }
 
-export default function CheckoutPage() {
+function CheckoutContent() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { items, total, isLoading: cartLoading } = useCart()
   const { language } = useLanguage()
   const isAr = language === "ar"
@@ -34,13 +35,6 @@ export default function CheckoutPage() {
   const [userId, setUserId] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [moyasarReady, setMoyasarReady] = useState(false)
-  const [moyasarConfig, setMoyasarConfig] = useState<{
-    publishable_key: string
-    order_id: string
-    amount: number
-    description: string
-  } | null>(null)
   const [qrUrl, setQrUrl] = useState<string | null>(null)
   const [showQrModal, setShowQrModal] = useState(false)
   const [qrLoading, setQrLoading] = useState(false)
@@ -57,22 +51,6 @@ export default function CheckoutPage() {
   const [useNewAddress, setUseNewAddress] = useState(false)
   const [isOtherRecipient, setIsOtherRecipient] = useState(false)
 
-  useEffect(() => {
-    if (!moyasarReady || !moyasarConfig || !window.Moyasar) return
-    window.Moyasar.init({
-      element: '.mysr-form',
-      amount: moyasarConfig.amount,
-      currency: 'SAR',
-      description: moyasarConfig.description,
-      publishable_api_key: moyasarConfig.publishable_key,
-      callback_url: `${window.location.origin}/orders/success/${moyasarConfig.order_id}`,
-      methods: ['creditcard', 'applepay', 'stcpay'],
-      supported_networks: ['mada', 'visa', 'mastercard'],
-      apple_pay_label: 'صرحي',
-      apple_pay_country: 'SA',
-      apple_pay_validate_merchant_url: 'https://api.moyasar.com/v1/applepay/initiate',
-    })
-  }, [moyasarReady, moyasarConfig])
 
   const formatSAR = (halalas: number) => (halalas / 100).toFixed(2)
 
@@ -117,6 +95,7 @@ export default function CheckoutPage() {
     }
   }, [needsAddress])
 
+
   const handleAddressSubmit = async () => {
     if (!address.full_name || !address.phone || !address.city || !address.address_line1) {
       setError(isAr ? "يرجى تعبئة جميع الحقول المطلوبة" : "Please fill in all required fields")
@@ -146,13 +125,17 @@ export default function CheckoutPage() {
     setError(null)
 
     try {
+      // Get user email
+      const { data: { user } } = await supabase.auth.getUser()
+      const userEmail = user?.email || ''
+
       // 1. إنشاء الطلب في Supabase
       const { data: order, error: orderError } = await supabase
         .from("orders")
         .insert({
           user_id: userId,
           buyer_name: address.full_name,
-          buyer_email: "",
+          buyer_email: userEmail,
           buyer_phone: address.phone,
           total_halalas: total,
           status: "pending",
@@ -172,32 +155,25 @@ export default function CheckoutPage() {
       const { error: itemsError } = await supabase.from("order_items").insert(orderItems)
       if (itemsError) throw new Error('order_items: ' + itemsError.message)
 
-      // 3. الحصول على مفتاح Moyasar (NEXT_PUBLIC_ متاح في client مباشرة)
-      const publishable_key = process.env.NEXT_PUBLIC_MOYASAR_PUBLISHABLE_KEY
-      if (!publishable_key) throw new Error('Moyasar publishable key not configured')
-
-      // 4. تحميل Moyasar.js وتهيئة نموذج الدفع
-      await new Promise<void>((resolve, reject) => {
-        if (window.Moyasar) { resolve(); return }
-        const link = document.createElement('link')
-        link.rel = 'stylesheet'
-        link.href = 'https://cdn.moyasar.com/mpf/1.14.0/moyasar.css'
-        document.head.appendChild(link)
-        const script = document.createElement('script')
-        script.src = 'https://cdn.moyasar.com/mpf/1.14.0/moyasar.js'
-        script.onload = () => resolve()
-        script.onerror = () => reject(new Error('Failed to load Moyasar.js'))
-        document.head.appendChild(script)
+      // 3. إنشاء charge في Tap
+      const response = await fetch('/api/payment/create-charge', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amount: Math.round(total),
+          order_id: order.id,
+        }),
       })
 
-      setMoyasarConfig({
-        publishable_key,
-        order_id: order.id,
-        amount: Math.round(total),
-        description: `Order #${order.id.slice(0, 8)}`,
-      })
-      setSubmitting(false)
-      setMoyasarReady(true)
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to create payment charge')
+      }
+
+      const { url } = await response.json()
+      
+      // 4. التوجيه إلى صفحة الدفع الخاصة بـ Tap
+      window.location.href = url
 
     } catch (err: any) {
       setError(err.message || (isAr ? "حدث خطأ أثناء معالجة الدفع" : "Payment processing error"))
@@ -234,15 +210,8 @@ export default function CheckoutPage() {
       const { error: itemsError } = await supabase.from("order_items").insert(orderItems)
       if (itemsError) throw new Error("order_items: " + itemsError.message)
 
-      const res = await fetch("/api/payment", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount: total, order_id: order.id }),
-      })
-      const data = await res.json()
-      if (!res.ok || !data.url) throw new Error(data.error || "Failed to get payment URL")
-
-      setQrUrl(data.url)
+      const url = `https://www.sarhy.com/pay/${order.id}`
+      setQrUrl(url)
       setShowQrModal(true)
     } catch (err: any) {
       setError(err.message || (isAr ? "حدث خطأ أثناء إنشاء رمز الدفع" : "Failed to generate payment QR"))
@@ -473,41 +442,37 @@ export default function CheckoutPage() {
                   {isAr ? "طريقة الدفع" : "Payment Method"}
                 </div>
 
-                {!moyasarReady ? (
-                  <>
-                    <p className="text-sm text-muted-foreground">
-                      {isAr
-                        ? "ادفع بأمان عبر مدى، فيزا، ماستركارد، Apple Pay، أو STC Pay."
-                        : "Pay securely via Mada, Visa, Mastercard, Apple Pay, or STC Pay."}
-                    </p>
-                    <div className="flex flex-wrap gap-3">
-                      <Button variant="outline" onClick={() => setStep("review")} disabled={submitting || qrLoading}>
-                        {isAr ? "رجوع" : "Back"}
-                      </Button>
-                      <Button onClick={handlePayment} disabled={submitting || qrLoading} className="gap-2">
-                        {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
-                        {submitting
-                          ? (isAr ? "جاري التحضير..." : "Loading...")
-                          : (isAr ? "الدفع الآن" : "Pay Now")}
-                      </Button>
-                      <Button
-                        variant="outline"
-                        onClick={handleMobilePayment}
-                        disabled={submitting || qrLoading}
-                        className="gap-2 border-primary/40 text-primary hover:bg-primary/5"
-                      >
-                        {qrLoading
-                          ? <Loader2 className="w-4 h-4 animate-spin" />
-                          : <Smartphone className="w-4 h-4" />}
-                        {qrLoading
-                          ? (isAr ? "جاري الإنشاء..." : "Generating...")
-                          : (isAr ? "ادفع بالجوال 📱" : "Pay by Mobile 📱")}
-                      </Button>
-                    </div>
-                  </>
-                ) : (
-                  <div className="mysr-form" />
-                )}
+                <>
+                  <p className="text-sm text-muted-foreground">
+                    {isAr
+                      ? "ادفع بأمان عبر مدى، فيزا، ماستركارد، Apple Pay، أو STC Pay."
+                      : "Pay securely via Mada, Visa, Mastercard, Apple Pay, or STC Pay."}
+                  </p>
+                  <div className="flex flex-wrap gap-3">
+                    <Button variant="outline" onClick={() => setStep("review")} disabled={submitting || qrLoading}>
+                      {isAr ? "رجوع" : "Back"}
+                    </Button>
+                    <Button onClick={handlePayment} disabled={submitting || qrLoading} className="gap-2">
+                      {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
+                      {submitting
+                        ? (isAr ? "جاري التحضير..." : "Loading...")
+                        : (isAr ? "الدفع الآن" : "Pay Now")}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={handleMobilePayment}
+                      disabled={submitting || qrLoading}
+                      className="gap-2 border-primary/40 text-primary hover:bg-primary/5"
+                    >
+                      {qrLoading
+                        ? <Loader2 className="w-4 h-4 animate-spin" />
+                        : <Smartphone className="w-4 h-4" />}
+                      {qrLoading
+                        ? (isAr ? "جاري الإنشاء..." : "Generating...")
+                        : (isAr ? "ادفع بالجوال 📱" : "Pay by Mobile 📱")}
+                    </Button>
+                  </div>
+                </>
               </div>
             )}
           </div>
@@ -553,7 +518,7 @@ export default function CheckoutPage() {
             <div className="flex justify-center mb-4 p-4 bg-white rounded-xl">
               <QRCodeSVG
                 value={qrUrl}
-                size={200}
+                size={220}
                 level="M"
                 includeMargin={false}
               />
@@ -561,8 +526,8 @@ export default function CheckoutPage() {
 
             <p className="text-sm text-center text-muted-foreground mb-4">
               {isAr
-                ? "افتح هذا الرابط على جوالك لإتمام الدفع بـ Apple Pay أو STC Pay"
-                : "Open this link on your phone to complete payment via Apple Pay or STC Pay"}
+                ? "صوّر الكود بكاميرا جوالك لإتمام الدفع بـ Apple Pay"
+                : "Scan the code with your phone camera to complete payment via Apple Pay"}
             </p>
 
             <div className="p-3 rounded-xl bg-secondary/50 break-all text-xs text-muted-foreground text-center mb-4 select-all">
@@ -588,5 +553,13 @@ export default function CheckoutPage() {
         </div>
       )}
     </div>
+  )
+}
+
+export default function CheckoutPage() {
+  return (
+    <Suspense>
+      <CheckoutContent />
+    </Suspense>
   )
 }

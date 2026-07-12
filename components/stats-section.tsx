@@ -142,7 +142,7 @@ export function StatsSection() {
   }, [])
   
   return (
-    <section className="py-24 lg:py-32 relative bg-slate-50">
+    <section className="py-24 lg:py-32 relative overflow-hidden bg-slate-50">
       {/* Background */}
       <div className="absolute inset-0 -z-10">
         <div className="absolute top-1/2 start-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-primary/5 rounded-full blur-[150px]" />

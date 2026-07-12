@@ -153,6 +153,78 @@ function PricingContent() {
             ))}
           </div>
           
+          {/* Commission Breakdown Table */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.35 }}
+            className="mt-16 max-w-2xl mx-auto"
+          >
+            <h2 className="text-2xl font-bold text-foreground mb-2 text-center">
+              {language === "ar" ? "توزيع المبالغ بشفافية كاملة" : "Full Commission Breakdown"}
+            </h2>
+            <p className="text-muted-foreground text-center text-sm mb-6">
+              {language === "ar"
+                ? "مثال: منتج بسعر 100 ريال"
+                : "Example: Product priced at 100 SAR"}
+            </p>
+            <div className="rounded-2xl border border-border overflow-hidden">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="bg-muted/50 border-b border-border">
+                    <th className="p-4 text-start font-semibold text-muted-foreground">
+                      {language === "ar" ? "الجهة" : "Party"}
+                    </th>
+                    <th className="p-4 text-center font-semibold text-muted-foreground">
+                      {language === "ar" ? "النسبة" : "Rate"}
+                    </th>
+                    <th className="p-4 text-end font-semibold text-muted-foreground">
+                      {language === "ar" ? "المبلغ (من 100 ر.س)" : "Amount (from 100 SAR)"}
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr className="border-b border-border bg-[#16a34a]/5">
+                    <td className="p-4 font-semibold text-[#16a34a]">
+                      {language === "ar" ? "البائع يستلم" : "Seller Receives"}
+                    </td>
+                    <td className="p-4 text-center font-bold text-[#16a34a]">81.5%</td>
+                    <td className="p-4 text-end font-bold text-[#16a34a]">
+                      81.50 {language === "ar" ? "ر.س" : "SAR"}
+                    </td>
+                  </tr>
+                  <tr className="border-b border-border">
+                    <td className="p-4 text-muted-foreground">
+                      {language === "ar" ? "عمولة منصة صرحي" : "Sarhy Platform Fee"}
+                    </td>
+                    <td className="p-4 text-center font-semibold">15%</td>
+                    <td className="p-4 text-end font-semibold">
+                      15.00 {language === "ar" ? "ر.س" : "SAR"}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="p-4 text-muted-foreground">
+                      {language === "ar" ? "رسوم بوابة الدفع (Tap)" : "Payment Gateway Fee (Tap)"}
+                    </td>
+                    <td className="p-4 text-center font-semibold">~3.5%</td>
+                    <td className="p-4 text-end font-semibold">
+                      ~3.50 {language === "ar" ? "ر.س" : "SAR"}
+                    </td>
+                  </tr>
+                </tbody>
+                <tfoot>
+                  <tr className="bg-muted/40">
+                    <td colSpan={3} className="p-3 text-center text-xs text-muted-foreground">
+                      {language === "ar"
+                        ? "* رسوم بوابة الدفع قد تتغير حسب طريقة الدفع. لا توجد رسوم مخفية."
+                        : "* Payment gateway fees may vary by payment method. No hidden fees."}
+                    </td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </motion.div>
+
           {/* FAQ Preview */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}

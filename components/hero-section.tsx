@@ -66,7 +66,7 @@ export function HeroSection() {
   ]
 
   return (
-    <section className="w-full" dir="rtl" style={{ fontFamily: "'Cairo', sans-serif" }}>
+    <section className="w-full overflow-hidden" dir="rtl" style={{ fontFamily: "'Cairo', sans-serif" }}>
 
       {/* HERO TEXT */}
       <div className="text-center px-6 pt-10 pb-7">
@@ -75,15 +75,15 @@ export function HeroSection() {
           <span>منصة الإنتاج الرقمي الأولى</span>
         </div>
         <h1
-          className="font-black mb-3 leading-snug"
-          style={{ fontSize: "clamp(18px, 2.5vw, 26px)", whiteSpace: "nowrap" }}
+          className="font-black mb-3 leading-snug max-w-2xl mx-auto"
+          style={{ fontSize: "clamp(18px, 2.5vw, 26px)" }}
         >
           صرحي.. وجهتك الأولى{" "}
           <span style={{ color: "#1e3a8a" }}>للأعمال الرقمية والخدمات.. بلا حدود</span>
         </h1>
         <p
-          className="text-muted-foreground leading-relaxed"
-          style={{ fontSize: "clamp(11px, 1.4vw, 14px)", whiteSpace: "nowrap" }}
+          className="text-muted-foreground leading-relaxed max-w-xl mx-auto"
+          style={{ fontSize: "clamp(11px, 1.4vw, 14px)" }}
         >
           منصة عالمية تجمع بين السوق الرقمي وأدوات الذكاء الاصطناعي واقتصاد المبدعين والتعليم في مكان واحد
         </p>

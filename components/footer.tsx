@@ -23,19 +23,21 @@ const footerLinks = {
   ],
   resources: [
     { key: "help", href: "/help", ar: "مركز المساعدة", en: "Help Center" },
+    { key: "pricing", href: "/pricing", ar: "الأسعار", en: "Pricing" },
+    { key: "contact", href: "/contact", ar: "تواصل معنا", en: "Contact Us" },
   ],
   legal: [
-    { key: "privacy", href: "/help", ar: "الخصوصية", en: "Privacy" },
-    { key: "terms", href: "/help", ar: "الشروط", en: "Terms" },
+    { key: "privacy", href: "/privacy", ar: "الخصوصية", en: "Privacy" },
+    { key: "terms", href: "/terms", ar: "الشروط", en: "Terms" },
   ],
 }
 
 const socialLinks = [
-  { icon: Twitter, href: "/help", label: "Twitter" },
-  { icon: Instagram, href: "/help", label: "Instagram" },
-  { icon: Youtube, href: "/help", label: "YouTube" },
-  { icon: Linkedin, href: "/help", label: "LinkedIn" },
-  { icon: Github, href: "/help", label: "GitHub" },
+  { icon: Twitter, href: "https://twitter.com/sarhycom", label: "Twitter" },
+  { icon: Instagram, href: "https://instagram.com/sarhycom", label: "Instagram" },
+  { icon: Youtube, href: "https://youtube.com/@sarhycom", label: "YouTube" },
+  { icon: Linkedin, href: "https://linkedin.com/company/sarhy", label: "LinkedIn" },
+  { icon: Github, href: "https://github.com/sarhy", label: "GitHub" },
 ]
 
 export function Footer() {

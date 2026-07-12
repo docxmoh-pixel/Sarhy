@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase"
 import { useLanguage, LanguageProvider } from "@/lib/language"
-import { ArrowLeft, Shield, DollarSign, CheckCircle2, XCircle, User, Wallet } from "lucide-react"
+import { ArrowLeft, Shield, DollarSign, CheckCircle2, XCircle, User, Wallet, Clock, TrendingUp, BadgeCheck } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
@@ -14,9 +14,11 @@ function AdminPayoutsPageContent() {
 
   const [loading, setLoading] = useState(true)
   const [isAdmin, setIsAdmin] = useState(false)
-  const [activeTab, setActiveTab] = useState<"verification" | "withdrawal">("verification")
+  const [activeTab, setActiveTab] = useState<"verification" | "withdrawal" | "payouts">("verification")
   const [verificationRequests, setVerificationRequests] = useState<any[]>([])
   const [withdrawalRequests, setWithdrawalRequests] = useState<any[]>([])
+  const [sellerBalances, setSellerBalances] = useState<any[]>([])
+  const [payoutFilter, setPayoutFilter] = useState<"pending" | "paid" | "all">("pending")
 
   useEffect(() => {
     const fetchData = async () => {
@@ -60,6 +62,14 @@ function AdminPayoutsPageContent() {
           .order("created_at", { ascending: false })
 
         setWithdrawalRequests(withdrawalData || [])
+
+        // Fetch seller balances with seller profiles
+        const { data: balancesData } = await supabase
+          .from("seller_balances")
+          .select("*, seller_profiles(store_name)")
+          .order("pending_halalas", { ascending: false })
+
+        setSellerBalances(balancesData || [])
       } catch (error) {
         console.error("Error fetching admin payouts data:", error)
       } finally {
@@ -160,6 +170,62 @@ function AdminPayoutsPageContent() {
     }
   }
 
+  const handleTransferPayout = async (sellerId: string, pendingHalalas: number) => {
+    if (pendingHalalas <= 0) return
+    try {
+      const supabase = createClient()
+
+      // Mark all pending orders for this seller as payout paid
+      await supabase
+        .from("orders")
+        .update({ payout_status: "paid" })
+        .eq("seller_id", sellerId)
+        .eq("payout_status", "pending")
+
+      // Update seller balance: pending → 0, paid += amount
+      await supabase
+        .from("seller_balances")
+        .update({
+          total_paid_halalas: supabase.rpc ? undefined : undefined, // handled below
+          pending_halalas: 0,
+        })
+        .eq("seller_id", sellerId)
+
+      // Use rpc or manual update for total_paid_halalas increment
+      await supabase.rpc("increment_seller_paid", {
+        p_seller_id: sellerId,
+        p_amount: pendingHalalas,
+      }).then(() => null).catch(() => {
+        // Fallback: fetch current and update manually
+        return supabase
+          .from("seller_balances")
+          .select("total_paid_halalas")
+          .eq("seller_id", sellerId)
+          .single()
+          .then(({ data: cur }) => {
+            if (cur) {
+              return supabase
+                .from("seller_balances")
+                .update({ total_paid_halalas: (cur.total_paid_halalas || 0) + pendingHalalas })
+                .eq("seller_id", sellerId)
+            }
+          })
+      })
+
+      // Refresh balances
+      const { data: balancesData } = await supabase
+        .from("seller_balances")
+        .select("*, seller_profiles(store_name)")
+        .order("pending_halalas", { ascending: false })
+      setSellerBalances(balancesData || [])
+
+      alert(language === "ar" ? "تم تسجيل التحويل بنجاح" : "Transfer recorded successfully")
+    } catch (err) {
+      console.error(err)
+      alert(language === "ar" ? "فشل تسجيل التحويل" : "Transfer failed")
+    }
+  }
+
   const handleRejectWithdrawal = async (requestId: string) => {
     try {
       const supabase = createClient()
@@ -230,7 +296,7 @@ function AdminPayoutsPageContent() {
           </div>
 
           {/* Tabs */}
-          <div className="mb-6 flex gap-2">
+          <div className="mb-6 flex gap-2 flex-wrap">
             <Button
               variant={activeTab === "verification" ? "default" : "outline"}
               onClick={() => setActiveTab("verification")}
@@ -246,6 +312,14 @@ function AdminPayoutsPageContent() {
             >
               <Wallet className="w-4 h-4" />
               {language === "ar" ? "طلبات السحب" : "Withdrawal Requests"}
+            </Button>
+            <Button
+              variant={activeTab === "payouts" ? "default" : "outline"}
+              onClick={() => setActiveTab("payouts")}
+              className="gap-2 rounded-xl"
+            >
+              <TrendingUp className="w-4 h-4" />
+              {language === "ar" ? "التسويات المالية" : "Seller Payouts"}
             </Button>
           </div>
 
@@ -379,6 +453,127 @@ function AdminPayoutsPageContent() {
               )}
             </div>
           )}
+          {/* Payouts Tab */}
+          {activeTab === "payouts" && (
+            <div className="space-y-6">
+              {/* Filter Buttons */}
+              <div className="flex gap-2 mb-4">
+                {(["all", "pending", "paid"] as const).map((f) => (
+                  <Button
+                    key={f}
+                    size="sm"
+                    variant={payoutFilter === f ? "default" : "outline"}
+                    onClick={() => setPayoutFilter(f)}
+                    className="rounded-xl"
+                  >
+                    {f === "all"
+                      ? language === "ar" ? "الكل" : "All"
+                      : f === "pending"
+                      ? language === "ar" ? "معلّق" : "Pending"
+                      : language === "ar" ? "محوّل" : "Paid"}
+                  </Button>
+                ))}
+              </div>
+
+              {sellerBalances
+                .filter((b) => {
+                  if (payoutFilter === "pending") return b.pending_halalas > 0
+                  if (payoutFilter === "paid") return b.pending_halalas === 0 && b.total_paid_halalas > 0
+                  return true
+                })
+                .length === 0 ? (
+                <Card className="shadow-md rounded-3xl">
+                  <CardContent className="py-16 text-center">
+                    <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-br from-primary/10 to-accent/10 rounded-2xl flex items-center justify-center">
+                      <TrendingUp className="w-10 h-10 text-primary/50" />
+                    </div>
+                    <h3 className="text-xl font-semibold mb-2">
+                      {language === "ar" ? "لا توجد تسويات" : "No payouts found"}
+                    </h3>
+                  </CardContent>
+                </Card>
+              ) : (
+                <Card className="shadow-md rounded-2xl overflow-hidden">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <TrendingUp className="w-5 h-5 text-primary" />
+                      {language === "ar" ? "أرصدة البائعين" : "Seller Balances"}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-0">
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b border-border bg-muted/40">
+                            <th className="p-4 text-start font-semibold text-muted-foreground">
+                              {language === "ar" ? "البائع" : "Seller"}
+                            </th>
+                            <th className="p-4 text-start font-semibold text-muted-foreground">
+                              {language === "ar" ? "إجمالي المكتسب" : "Total Earned"}
+                            </th>
+                            <th className="p-4 text-start font-semibold text-[#c9a227]">
+                              {language === "ar" ? "معلّق (ر.س)" : "Pending (SAR)"}
+                            </th>
+                            <th className="p-4 text-start font-semibold text-[#16a34a]">
+                              {language === "ar" ? "محوّل (ر.س)" : "Paid (SAR)"}
+                            </th>
+                            <th className="p-4 text-start font-semibold text-muted-foreground">
+                              {language === "ar" ? "إجراء" : "Action"}
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {sellerBalances
+                            .filter((b) => {
+                              if (payoutFilter === "pending") return b.pending_halalas > 0
+                              if (payoutFilter === "paid") return b.pending_halalas === 0 && b.total_paid_halalas > 0
+                              return true
+                            })
+                            .map((balance) => (
+                              <tr key={balance.seller_id} className="border-b border-border hover:bg-muted/30 transition-colors">
+                                <td className="p-4">
+                                  <div className="font-medium text-foreground">
+                                    {balance.seller_profiles?.store_name || balance.seller_id?.slice(0, 8) + "..."}
+                                  </div>
+                                  <div className="text-xs text-muted-foreground">{balance.seller_id?.slice(0, 12)}...</div>
+                                </td>
+                                <td className="p-4 font-semibold text-foreground">
+                                  {((balance.total_earned_halalas || 0) / 100).toFixed(2)}
+                                </td>
+                                <td className="p-4 font-bold text-[#c9a227]">
+                                  {((balance.pending_halalas || 0) / 100).toFixed(2)}
+                                </td>
+                                <td className="p-4 font-bold text-[#16a34a]">
+                                  {((balance.total_paid_halalas || 0) / 100).toFixed(2)}
+                                </td>
+                                <td className="p-4">
+                                  {balance.pending_halalas > 0 ? (
+                                    <Button
+                                      size="sm"
+                                      onClick={() => handleTransferPayout(balance.seller_id, balance.pending_halalas)}
+                                      className="gap-1.5 rounded-xl bg-[#16a34a] hover:bg-[#15803d] text-white"
+                                    >
+                                      <BadgeCheck className="w-4 h-4" />
+                                      {language === "ar" ? "تحويل" : "Transfer"}
+                                    </Button>
+                                  ) : (
+                                    <span className="inline-flex items-center gap-1 text-xs text-[#16a34a]">
+                                      <CheckCircle2 className="w-4 h-4" />
+                                      {language === "ar" ? "مكتمل" : "Done"}
+                                    </span>
+                                  )}
+                                </td>
+                              </tr>
+                            ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          )}
+
         </div>
       </main>
     </div>

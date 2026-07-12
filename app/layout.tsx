@@ -76,7 +76,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ar" dir="rtl" className="bg-background" suppressHydrationWarning>
-      <body className={`${ibmPlexSansArabic.variable} ${inter.variable} font-sans antialiased`}>
+      <body className={`${ibmPlexSansArabic.variable} ${inter.variable} font-sans antialiased overflow-x-hidden`}>
         <LanguageProvider>
           <CartProvider>
             <NotificationsProvider>

@@ -26,6 +26,7 @@ function RegisterContent() {
     email: "",
     password: "",
     agreedToTerms: false,
+    agreedToCommission: false,
   })
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -51,6 +52,10 @@ function RegisterContent() {
     }
     if (!form.agreedToTerms) {
       setError(language === "ar" ? "يجب الموافقة على الشروط والأحكام" : "You must agree to the terms")
+      return
+    }
+    if (accountType === "creator" && !form.agreedToCommission) {
+      setError(language === "ar" ? "يجب الموافقة على شروط العمولة للتسجيل كبائع" : "Sellers must agree to the commission terms")
       return
     }
 
@@ -297,6 +302,22 @@ function RegisterContent() {
                   : "I agree to the Terms of Service and Privacy Policy"}
               </Label>
             </div>
+
+            {accountType === "creator" && (
+              <div className="flex items-start gap-2 p-3 rounded-xl bg-amber-50 border border-amber-200 dark:bg-amber-950/30 dark:border-amber-800">
+                <Checkbox
+                  id="commission"
+                  checked={form.agreedToCommission}
+                  onCheckedChange={(v) => setForm((p) => ({ ...p, agreedToCommission: Boolean(v) }))}
+                  className="mt-1"
+                />
+                <Label htmlFor="commission" className="text-sm font-normal leading-relaxed text-amber-900 dark:text-amber-200">
+                  {language === "ar"
+                    ? "أوافق على شروط صرحي بما فيها عمولة المنصة 15% من كل بيعة"
+                    : "I agree to Sarhy's terms including the 15% platform commission on every sale"}
+                </Label>
+              </div>
+            )}
 
             <Button type="submit" className="w-full h-12 rounded-xl gap-2" disabled={isLoading}>
               {isLoading ? (

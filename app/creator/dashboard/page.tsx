@@ -7,7 +7,7 @@ import { createClient } from "@/lib/supabase";
 import { useLanguage } from "@/lib/language";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Sparkles, Package, ShoppingCart, DollarSign, Plus, Settings, Share2, Copy, Check, User, Calendar } from "lucide-react";
+import { Sparkles, Package, ShoppingCart, DollarSign, Plus, Settings, Share2, Copy, Check, User, Calendar, Wallet, TrendingUp, Clock } from "lucide-react";
 import { NotificationBell } from "@/components/notification-bell";
 
 function DashboardContent() {
@@ -26,6 +26,7 @@ function DashboardContent() {
     revenue: 0,
   });
   const [recentOrders, setRecentOrders] = useState<any[]>([]);
+  const [wallet, setWallet] = useState<{ total_earned_halalas: number; pending_halalas: number; total_paid_halalas: number } | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -97,6 +98,14 @@ function DashboardContent() {
 
         // Set recent orders (last 5)
         setRecentOrders(sellerOrders.slice(0, 5));
+
+        // Fetch wallet balance
+        const { data: walletData } = await supabase
+          .from("seller_balances")
+          .select("total_earned_halalas, pending_halalas, total_paid_halalas")
+          .eq("seller_id", user.id)
+          .single();
+        setWallet(walletData || null);
       } catch (err: any) {
         setError(err.message || t("dashboard.error.load"));
       } finally {
@@ -271,6 +280,74 @@ function DashboardContent() {
               </CardContent>
             </Card>
           </div>
+
+          {/* Wallet Card */}
+          <Card className="mb-8 bg-gradient-to-br from-[#0f2e2e]/5 to-[#c9a227]/5 border-[#c9a227]/20">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Wallet className="w-5 h-5 text-[#c9a227]" />
+                {language === "ar" ? "محفظتي" : "My Wallet"}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+                {/* Total Earned */}
+                <div className="p-4 rounded-xl bg-background border border-border">
+                  <div className="flex items-center gap-2 mb-2">
+                    <TrendingUp className="w-4 h-4 text-primary" />
+                    <span className="text-sm text-muted-foreground">
+                      {language === "ar" ? "إجمالي المكتسب" : "Total Earned"}
+                    </span>
+                  </div>
+                  <div className="text-2xl font-bold text-foreground">
+                    {wallet ? (wallet.total_earned_halalas / 100).toFixed(2) : "0.00"}
+                    <span className="text-sm font-normal text-muted-foreground mr-1">
+                      {language === "ar" ? "ر.س" : "SAR"}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Pending */}
+                <div className="p-4 rounded-xl bg-background border border-[#c9a227]/40">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Clock className="w-4 h-4 text-[#ea580c]" />
+                    <span className="text-sm text-muted-foreground">
+                      {language === "ar" ? "قيد التحويل" : "Pending"}
+                    </span>
+                  </div>
+                  <div className="text-2xl font-bold text-[#c9a227]">
+                    {wallet ? (wallet.pending_halalas / 100).toFixed(2) : "0.00"}
+                    <span className="text-sm font-normal text-muted-foreground mr-1">
+                      {language === "ar" ? "ر.س" : "SAR"}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Paid */}
+                <div className="p-4 rounded-xl bg-background border border-[#16a34a]/30">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Check className="w-4 h-4 text-[#16a34a]" />
+                    <span className="text-sm text-muted-foreground">
+                      {language === "ar" ? "محوّل سابقاً" : "Transferred"}
+                    </span>
+                  </div>
+                  <div className="text-2xl font-bold text-[#16a34a]">
+                    {wallet ? (wallet.total_paid_halalas / 100).toFixed(2) : "0.00"}
+                    <span className="text-sm font-normal text-muted-foreground mr-1">
+                      {language === "ar" ? "ر.س" : "SAR"}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                <Clock className="w-3.5 h-3.5 shrink-0" />
+                {language === "ar"
+                  ? "سيتم تحويل المبلغ المحجوز خلال 7 أيام عمل من تاريخ اكتمال الطلب"
+                  : "Pending amount will be transferred within 7 business days from order completion"}
+              </p>
+            </CardContent>
+          </Card>
 
           {/* Recent Orders */}
           <Card className="mb-8">
