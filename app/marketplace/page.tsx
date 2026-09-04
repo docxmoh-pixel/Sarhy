@@ -96,6 +96,14 @@ function MarketplaceContent() {
   }
 
   const filteredProducts = products
+  
+  // Separate digital and non-digital products
+  const digitalProducts = filteredProducts.filter(
+    (product) => product.fulfillment_type === "digital" || product.fulfillment_type === "service_remote"
+  )
+  const nonDigitalProducts = filteredProducts.filter(
+    (product) => product.fulfillment_type === "physical_shipping" || product.fulfillment_type === "service_onsite"
+  )
 
   const formatSAR = (halalas: number) => (halalas / 100).toFixed(2)
 
@@ -218,6 +226,8 @@ function MarketplaceContent() {
                     ? JSON.parse(product.images)
                     : product.images
                   : []
+                
+                const isNonDigital = product.fulfillment_type === "physical_shipping" || product.fulfillment_type === "service_onsite"
 
                 return (
                   <motion.div
@@ -226,8 +236,8 @@ function MarketplaceContent() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.05 }}
                   >
-                    <Link href={`/product/${product.id}`}>
-                      <div className="group glass rounded-2xl overflow-hidden card-hover">
+                    {isNonDigital ? (
+                      <div className="group glass rounded-2xl overflow-hidden relative opacity-75">
                         <div
                           className={cn(
                             "relative overflow-hidden bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center",
@@ -239,44 +249,97 @@ function MarketplaceContent() {
                               src={images[0]}
                               alt=""
                               fill
-                              className="object-cover transition-transform duration-500 group-hover:scale-110"
+                              className="object-cover transition-transform duration-500 group-hover:scale-110 grayscale"
                             />
                           ) : (
-                            <span className="text-5xl">📦</span>
+                            <span className="text-5xl grayscale">📦</span>
                           )}
-                          <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-
-                          <div className="absolute top-4 end-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button className="w-10 h-10 rounded-full glass flex items-center justify-center hover:bg-primary hover:text-primary-foreground transition-colors">
-                              <Heart className="w-5 h-5" />
-                            </button>
+                          
+                          {/* Coming Soon Badge */}
+                          <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                            <div className="text-center">
+                              <div className="text-4xl mb-2">⏳</div>
+                              <div className="text-white font-bold text-lg">
+                                {isAr ? "قريبًا" : "Coming Soon"}
+                              </div>
+                              <div className="text-white/80 text-sm mt-1">
+                                {isAr ? "خدمة غير رقمية" : "Non-Digital Service"}
+                              </div>
+                            </div>
                           </div>
                         </div>
 
                         <div className="p-4">
                           {product.subcategory && (
-                            <span className="inline-block mb-2 px-2 py-0.5 rounded-full text-xs bg-secondary text-secondary-foreground">
+                            <span className="inline-block mb-2 px-2 py-0.5 rounded-full text-xs bg-amber-100 text-amber-800">
                               {product.subcategory}
                             </span>
                           )}
 
-                          <h3 className="font-semibold mb-2 line-clamp-1">
+                          <h3 className="font-semibold mb-2 line-clamp-1 text-muted-foreground">
                             {product.title}
                           </h3>
 
                           <div className="flex items-center justify-between">
-                            <span className="text-lg font-bold text-primary">
+                            <span className="text-lg font-bold text-muted-foreground">
                               {formatSAR(product.price_halalas || 0)} {isAr ? "ر.س" : "SAR"}
                             </span>
-                            {product.sale_count > 0 && (
-                              <span className="text-xs text-muted-foreground">
-                                {product.sale_count} {isAr ? "مبيعة" : "sold"}
-                              </span>
-                            )}
                           </div>
                         </div>
                       </div>
-                    </Link>
+                    ) : (
+                      <Link href={`/product/${product.id}`}>
+                        <div className="group glass rounded-2xl overflow-hidden card-hover">
+                          <div
+                            className={cn(
+                              "relative overflow-hidden bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center",
+                              viewMode === "large" ? "aspect-[16/10]" : "aspect-[4/3]"
+                            )}
+                          >
+                            {images.length > 0 && images[0] ? (
+                              <Image
+                                src={images[0]}
+                                alt=""
+                                fill
+                                className="object-cover transition-transform duration-500 group-hover:scale-110"
+                              />
+                            ) : (
+                              <span className="text-5xl">📦</span>
+                            )}
+                            <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+
+                            <div className="absolute top-4 end-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <button className="w-10 h-10 rounded-full glass flex items-center justify-center hover:bg-primary hover:text-primary-foreground transition-colors">
+                                <Heart className="w-5 h-5" />
+                              </button>
+                            </div>
+                          </div>
+
+                          <div className="p-4">
+                            {product.subcategory && (
+                              <span className="inline-block mb-2 px-2 py-0.5 rounded-full text-xs bg-secondary text-secondary-foreground">
+                                {product.subcategory}
+                              </span>
+                            )}
+
+                            <h3 className="font-semibold mb-2 line-clamp-1">
+                              {product.title}
+                            </h3>
+
+                            <div className="flex items-center justify-between">
+                              <span className="text-lg font-bold text-primary">
+                                {formatSAR(product.price_halalas || 0)} {isAr ? "ر.س" : "SAR"}
+                              </span>
+                              {product.sale_count > 0 && (
+                                <span className="text-xs text-muted-foreground">
+                                  {product.sale_count} {isAr ? "مبيعة" : "sold"}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </Link>
+                    )}
                   </motion.div>
                 )
               })}

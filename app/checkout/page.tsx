@@ -30,6 +30,11 @@ function CheckoutContent() {
   const needsAddress = items.some(
     (item) => item.products?.fulfillment_type === "physical_shipping" || item.products?.fulfillment_type === "service_onsite"
   )
+  
+  // Check for non-digital products
+  const hasNonDigitalProducts = items.some(
+    (item) => item.products?.fulfillment_type === "physical_shipping" || item.products?.fulfillment_type === "service_onsite"
+  )
 
   const [step, setStep] = useState<Step>("review")
   const [userId, setUserId] = useState<string | null>(null)
@@ -237,6 +242,55 @@ function CheckoutContent() {
         <Link href="/marketplace">
           <Button>{isAr ? "تصفح المنتجات" : "Browse Products"}</Button>
         </Link>
+      </div>
+    )
+  }
+
+  // Check for non-digital products and show error
+  if (hasNonDigitalProducts) {
+    const nonDigitalItems = items.filter(
+      (item) => item.products?.fulfillment_type === "physical_shipping" || item.products?.fulfillment_type === "service_onsite"
+    )
+    
+    return (
+      <div className="min-h-screen bg-background pt-32 pb-16 text-center px-4">
+        <div className="max-w-md mx-auto">
+          <div className="bg-amber-50 border border-amber-200 rounded-2xl p-8 mb-6">
+            <div className="text-4xl mb-4">⏳</div>
+            <h2 className="text-xl font-bold text-amber-900 mb-2">
+              {isAr ? "خدمة غير متاحة حاليًا" : "Service Currently Unavailable"}
+            </h2>
+            <p className="text-amber-800 mb-4">
+              {isAr 
+                ? "يحتوي طلبك على منتجات أو خدمات غير رقمية. هذه الخدمات غير متاحة حاليًا وستتوفر قريبًا."
+                : "Your cart contains non-digital products or services. These services are currently unavailable and will be available soon."}
+            </p>
+            <div className="bg-amber-100 rounded-lg p-4 mb-4 text-right">
+              <p className="font-medium text-amber-900 mb-2">
+                {isAr ? "المنتجات غير المتاحة:" : "Unavailable Products:"}
+              </p>
+              {nonDigitalItems.map((item) => (
+                <div key={item.product_id} className="text-sm text-amber-800 mb-1">
+                  • {item.products?.title}
+                </div>
+              ))}
+            </div>
+            <div className="space-y-3">
+              <Button 
+                onClick={() => router.back()}
+                className="w-full"
+                variant="outline"
+              >
+                {isAr ? "إزالة المنتجات غير المتاحة" : "Remove Unavailable Products"}
+              </Button>
+              <Link href="/marketplace">
+                <Button className="w-full" variant="ghost">
+                  {isAr ? "تصفح المنتجات الرقمية" : "Browse Digital Products"}
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </div>
       </div>
     )
   }

@@ -84,6 +84,26 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     }
     if (!user) { window.location.href = "/auth/login"; return }
 
+    // Check if product is non-digital
+    if (product) {
+      const isNonDigital = product.fulfillment_type === "physical_shipping" || product.fulfillment_type === "service_onsite"
+      if (isNonDigital) {
+        alert("⏳ هذه الخدمة غير متاحة حاليًا. ستتوفر قريبًا.")
+        return
+      }
+    } else {
+      // Fetch product to check fulfillment type
+      const supabase = createClient()
+      const { data: productData } = await supabase.from("products").select("fulfillment_type").eq("id", productId).single()
+      if (productData) {
+        const isNonDigital = productData.fulfillment_type === "physical_shipping" || productData.fulfillment_type === "service_onsite"
+        if (isNonDigital) {
+          alert("⏳ هذه الخدمة غير متاحة حاليًا. ستتوفر قريبًا.")
+          return
+        }
+      }
+    }
+
     setIsLoading(true)
     const supabase = createClient()
 

@@ -186,31 +186,35 @@ function AdminPayoutsPageContent() {
       await supabase
         .from("seller_balances")
         .update({
-          total_paid_halalas: supabase.rpc ? undefined : undefined, // handled below
+          // total_paid_halalas is updated below via RPC
           pending_halalas: 0,
         })
         .eq("seller_id", sellerId)
 
       // Use rpc or manual update for total_paid_halalas increment
-      await supabase.rpc("increment_seller_paid", {
-        p_seller_id: sellerId,
-        p_amount: pendingHalalas,
-      }).then(() => null).catch(() => {
+      try {
+        await supabase.rpc("increment_seller_paid", {
+          p_seller_id: sellerId,
+          p_amount: pendingHalalas,
+        })
+      } catch {
         // Fallback: fetch current and update manually
-        return supabase
+        const { data: cur } = await supabase
           .from("seller_balances")
           .select("total_paid_halalas")
           .eq("seller_id", sellerId)
           .single()
-          .then(({ data: cur }) => {
-            if (cur) {
-              return supabase
-                .from("seller_balances")
-                .update({ total_paid_halalas: (cur.total_paid_halalas || 0) + pendingHalalas })
-                .eq("seller_id", sellerId)
-            }
-          })
-      })
+
+        if (cur) {
+          await supabase
+            .from("seller_balances")
+            .update({
+              total_paid_halalas:
+                (cur.total_paid_halalas || 0) + pendingHalalas,
+            })
+            .eq("seller_id", sellerId)
+        }
+      }
 
       // Refresh balances
       const { data: balancesData } = await supabase

@@ -42,34 +42,34 @@ function EnterpriseContent() {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-center max-w-4xl mx-auto"
+            className="text-center max-w-6xl mx-auto"
           >
             <Badge variant="secondary" className="mb-4 rounded-full">
               <Building2 className="w-4 h-4 me-1" />
               {language === "ar" ? "للمؤسسات" : "Enterprise"}
             </Badge>
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-foreground mb-6">
+            <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-foreground mb-6">
               {language === "ar" 
                 ? "حلول مؤسسية لفرق الإبداع"
                 : "Enterprise Solutions for Creative Teams"
               }
             </h1>
-            <p className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto">
+            <p className="text-lg text-muted-foreground mb-8 max-w-3xl mx-auto line-clamp-2">
               {language === "ar" 
                 ? "منصة متكاملة لإدارة الأصول الرقمية وتمكين فرق الإبداع في مؤسستك"
                 : "A comprehensive platform for digital asset management and empowering creative teams"
               }
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <div className="flex flex-col sm:flex-row gap-6 justify-center">
               <Link href="/contact">
                 <Button size="lg" className="rounded-full h-12 px-8 gap-2">
-                  {language === "ar" ? "احجز عرض توضيحي" : "Book a Demo"}
+                  {language === "ar" ? "تحدث مع المبيعات" : "Talk to Sales"}
                   <Arrow className="w-4 h-4" />
                 </Button>
               </Link>
-              <Link href="/contact">
+              <Link href="/pricing">
                 <Button size="lg" variant="outline" className="rounded-full h-12 px-8">
-                  {language === "ar" ? "تحدث مع المبيعات" : "Talk to Sales"}
+                  {language === "ar" ? "عرض الباقات" : "View Plans"}
                 </Button>
               </Link>
             </div>
@@ -84,10 +84,10 @@ function EnterpriseContent() {
             transition={{ delay: 0.1 }}
             className="text-center mb-12"
           >
-            <h2 className="text-3xl font-bold text-foreground mb-4">
+            <h2 className="text-4xl font-bold text-foreground mb-4">
               {language === "ar" ? "مميزات للمؤسسات" : "Enterprise Features"}
             </h2>
-            <p className="text-muted-foreground">
+            <p className="text-muted-foreground max-w-2xl mx-auto">
               {language === "ar" 
                 ? "كل ما تحتاجه مؤسستك في منصة واحدة"
                 : "Everything your organization needs in one platform"
@@ -95,22 +95,22 @@ function EnterpriseContent() {
             </p>
           </motion.div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-8">
             {features.map((feature, index) => (
               <motion.div
                 key={index}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.1 + index * 0.05 }}
-                className="bg-card rounded-2xl border border-border p-6 card-hover"
+                className="bg-card rounded-2xl border border-border p-8 card-hover"
               >
-                <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4">
-                  <feature.icon className="w-6 h-6 text-primary" />
+                <div className="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center mb-6">
+                  <feature.icon className="w-7 h-7 text-primary" />
                 </div>
-                <h3 className="text-lg font-semibold text-foreground mb-2">
+                <h3 className="text-xl font-semibold text-foreground mb-3">
                   {feature.title[language]}
                 </h3>
-                <p className="text-muted-foreground text-sm">
+                <p className="text-muted-foreground text-base">
                   {feature.desc[language]}
                 </p>
               </motion.div>

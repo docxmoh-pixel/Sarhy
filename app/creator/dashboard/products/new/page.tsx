@@ -382,25 +382,42 @@ export default function NewProductPage() {
                     <Label>{language === "ar" ? "طريقة تسليم المنتج" : "Product Fulfillment Type"}</Label>
                     <div className="grid grid-cols-2 gap-3 mt-2">
                       {[
-                        { value: "digital", ar: "منتج رقمي (تحميل فوري)", en: "Digital (Instant Download)" },
-                        { value: "service_remote", ar: "خدمة عن بُعد", en: "Remote Service" },
-                        { value: "physical_shipping", ar: "منتج يحتاج شحن", en: "Physical (Needs Shipping)" },
-                        { value: "service_onsite", ar: "خدمة حضورية/يدوية", en: "On-site/Manual Service" },
+                        { value: "digital", ar: "منتج رقمي (تحميل فوري)", en: "Digital (Instant Download)", available: true },
+                        { value: "service_remote", ar: "خدمة عن بُعد", en: "Remote Service", available: true },
+                        { value: "physical_shipping", ar: "منتج يحتاج شحن", en: "Physical (Needs Shipping)", available: false },
+                        { value: "service_onsite", ar: "خدمة حضورية/يدوية", en: "On-site/Manual Service", available: false },
                       ].map((opt) => (
                         <button
                           type="button"
                           key={opt.value}
-                          onClick={() => setFulfillmentType(opt.value)}
-                          className={`p-3 rounded-xl border text-sm text-right transition-colors ${
+                          onClick={() => opt.available && setFulfillmentType(opt.value)}
+                          disabled={!opt.available}
+                          className={`p-3 rounded-xl border text-sm text-right transition-colors relative ${
                             fulfillmentType === opt.value
                               ? "border-primary bg-primary/10 font-medium"
-                              : "border-border hover:bg-secondary"
+                              : opt.available
+                              ? "border-border hover:bg-secondary"
+                              : "border-muted bg-muted/50 opacity-60 cursor-not-allowed"
                           }`}
                         >
-                          {language === "ar" ? opt.ar : opt.en}
+                          <div className="flex flex-col items-start">
+                            <span>{language === "ar" ? opt.ar : opt.en}</span>
+                            {!opt.available && (
+                              <span className="text-xs text-amber-600 font-medium mt-1">
+                                {language === "ar" ? "قريبًا ⏳" : "Coming Soon ⏳"}
+                              </span>
+                            )}
+                          </div>
                         </button>
                       ))}
                     </div>
+                    {!["digital", "service_remote"].includes(fulfillmentType) && (
+                      <div className="mt-2 p-2 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-800">
+                        {language === "ar" 
+                          ? "⚠️ هذه الخدمة غير متاحة حاليًا. يرجى اختيار منتج رقمي أو خدمة عن بُعد." 
+                          : "⚠️ This service is currently unavailable. Please select a digital product or remote service."}
+                      </div>
+                    )}
                   </div>
 
                   <div className="space-y-2">
