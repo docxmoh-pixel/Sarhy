@@ -35,7 +35,7 @@ export default function PayPage() {
     setError(null)
 
     try {
-      const response = await fetch('/api/payment/create-charge', {
+      const response = await fetch('/api/payment/create-invoice', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -46,7 +46,7 @@ export default function PayPage() {
 
       if (!response.ok) {
         const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to create payment charge')
+        throw new Error(errorData.error || 'Failed to create payment invoice')
       }
 
       const { url } = await response.json()
