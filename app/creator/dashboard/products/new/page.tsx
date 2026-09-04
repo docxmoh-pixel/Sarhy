@@ -112,6 +112,48 @@ export default function NewProductPage() {
     setLoading(true);
 
     try {
+      // Validation before submission
+      if (!formData.name || !formData.description || !formData.price || !mainCategory || !subCategory) {
+        const errorMsg = language === "ar" 
+          ? "يرجى تعبئة جميع الحقول المطلوبة (الاسم، الوصف، السعر، القسم الرئيسي، القسم الفرعي)" 
+          : "Please fill in all required fields (name, description, price, main category, sub category)";
+        alert(errorMsg);
+        setLoading(false);
+        return;
+      }
+
+      if (formData.hasExpiry && !formData.expiryDate) {
+        const errorMsg = language === "ar" 
+          ? "يرجى تحديد تاريخ انتهاء الصلاحية" 
+          : "Please specify expiry date";
+        alert(errorMsg);
+        setLoading(false);
+        return;
+      }
+
+      // Require at least images or file (one or the other, not both)
+      const hasImages = formData.images && formData.images.length > 0;
+      const hasFile = formData.file !== null;
+      
+      if (!hasImages && !hasFile) {
+        const errorMsg = language === "ar" 
+          ? "يرجى رفع صور المنتج أو ملف المنتج (واحد منهما على الأقل)" 
+          : "Please upload product images or product file (at least one)";
+        alert(errorMsg);
+        setLoading(false);
+        return;
+      }
+
+      // Validate fulfillment type
+      if (!["digital", "service_remote"].includes(fulfillmentType)) {
+        const errorMsg = language === "ar" 
+          ? "يرجى اختيار طريقة تسليم صالحة (منتج رقمي أو خدمة عن بُعد)" 
+          : "Please select a valid fulfillment type (digital product or remote service)";
+        alert(errorMsg);
+        setLoading(false);
+        return;
+      }
+
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
 
@@ -120,62 +162,85 @@ export default function NewProductPage() {
         return;
       }
 
+      console.log("Starting product creation process...");
+
       // 1. رفع الصور إلى Supabase Storage
       const imageUrls: string[] = [];
       if (formData.images && formData.images.length > 0) {
+        console.log("Uploading images:", formData.images.length);
         for (const image of formData.images) {
           const ext = image.name.split('.').pop();
           const path = `${user.id}/${Date.now()}-${Math.random().toString(36).substring(2)}.${ext}`;
+          console.log("Uploading image:", path);
           const { error: uploadError } = await supabase.storage
             .from('products')
             .upload(path, image, { upsert: false });
-          if (uploadError) throw uploadError;
+          if (uploadError) {
+            console.error("Image upload error:", uploadError);
+            throw new Error(`${language === "ar" ? "خطأ في رفع الصورة:" : "Image upload error:"} ${uploadError.message}`);
+          }
           const { data: urlData } = supabase.storage
             .from('products')
             .getPublicUrl(path);
           imageUrls.push(urlData.publicUrl);
+          console.log("Image uploaded successfully:", urlData.publicUrl);
         }
       }
 
       // 2. رفع ملف المنتج الرقمي
       let productFileUrl: string | null = null;
       if (formData.file) {
+        console.log("Uploading product file:", formData.file.name);
         const ext = formData.file.name.split('.').pop();
         const path = `${user.id}/files/${Date.now()}.${ext}`;
         const { error: fileUploadError } = await supabase.storage
           .from('products')
           .upload(path, formData.file, { upsert: false });
-        if (fileUploadError) throw fileUploadError;
+        if (fileUploadError) {
+          console.error("File upload error:", fileUploadError);
+          throw new Error(`${language === "ar" ? "خطأ في رفع الملف:" : "File upload error:"} ${fileUploadError.message}`);
+        }
         const { data: fileUrlData } = supabase.storage
           .from('products')
           .getPublicUrl(path);
         productFileUrl = fileUrlData.publicUrl;
+        console.log("File uploaded successfully:", fileUrlData.publicUrl);
       }
 
       // 3. إدراج المنتج مع الصور والملف
+      console.log("Inserting product into database...");
+      const productData = {
+        title: formData.name,
+        description: formData.description,
+        price_halalas: Math.round(parseFloat(formData.price) * 100),
+        slug: formData.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') + '-' + Date.now(),
+        seller_id: user.id,
+        is_published: false,
+        category: mainCategory,
+        subcategory: subCategory,
+        features: features.split('\n').filter((f: string) => f.trim()).join('|'),
+        fulfillment_type: fulfillmentType,
+        images: imageUrls.length > 0 ? JSON.stringify(imageUrls) : null,
+        product_file_url: productFileUrl,
+      };
+
+      console.log("Product data:", productData);
+
       const { error } = await supabase
         .from("products")
-        .insert({
-          title: formData.name,
-          description: formData.description,
-          price_halalas: Math.round(parseFloat(formData.price) * 100),
-          slug: formData.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') + '-' + Date.now(),
-          seller_id: user.id,
-          is_published: false,
-          category: mainCategory,
-          subcategory: subCategory,
-          features: features.split('\n').filter((f: string) => f.trim()).join('|'),
-          fulfillment_type: fulfillmentType,
-          images: imageUrls.length > 0 ? JSON.stringify(imageUrls) : null,
-          product_file_url: productFileUrl,
-        });
+        .insert(productData);
 
-      if (error) throw error;
+      if (error) {
+        console.error("Database insert error:", error);
+        throw new Error(`${language === "ar" ? "خطأ في قاعدة البيانات:" : "Database error:"} ${error.message}`);
+      }
 
+      console.log("Product created successfully!");
       router.push("/creator/dashboard/products");
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error creating product:", error);
-      alert(language === "ar" ? "حدث خطأ أثناء إضافة المنتج" : "Error creating product");
+      const errorMessage = error?.message || (language === "ar" ? "حدث خطأ أثناء إضافة المنتج" : "Error creating product");
+      alert(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -422,7 +487,7 @@ export default function NewProductPage() {
 
                   <div className="space-y-2">
                     <Label htmlFor="file">
-                      {language === "ar" ? "رفع ملف المنتج (الحد الأقصى 50 ميجابايت)" : "Upload Product File (Max 50MB)"}
+                      {language === "ar" ? "رفع ملف المنتج (الحد الأقصى 50 ميجابايت) - مطلوب إذا لم يتم رفع صور" : "Upload Product File (Max 50MB) - Required if no images uploaded"}
                     </Label>
                     <div className="flex items-center gap-4">
                       <Input
@@ -440,7 +505,7 @@ export default function NewProductPage() {
 
                   <div className="space-y-2">
                     <Label htmlFor="images">
-                      {language === "ar" ? "رفع صور المنتج (حد أقصى 5 صور، 2 ميجابايت لكل صورة، 10 ميجابايت إجمالي)" : "Upload Product Images (Max 5 images, 2MB each, 10MB total)"}
+                      {language === "ar" ? "رفع صور المنتج (حد أقصى 5 صور، 2 ميجابايت لكل صورة، 10 ميجابايت إجمالي) - مطلوب إذا لم يتم رفع ملف" : "Upload Product Images (Max 5 images, 2MB each, 10MB total) - Required if no file uploaded"}
                     </Label>
                     <div className="flex items-center gap-4">
                       <Input
@@ -621,7 +686,7 @@ export default function NewProductPage() {
                     onClick={() => setCurrentStep(currentStep + 1)}
                     disabled={
                       currentStep === 1 &&
-                      (!formData.name || !formData.description || !formData.price || !mainCategory || !subCategory || (formData.hasExpiry && !formData.expiryDate))
+                      (!formData.name || !formData.description || !formData.price || !mainCategory || !subCategory || (formData.hasExpiry && !formData.expiryDate) || ((!formData.images || formData.images.length === 0) && !formData.file))
                     }
                     className="flex-1 gap-2 rounded-xl"
                   >
