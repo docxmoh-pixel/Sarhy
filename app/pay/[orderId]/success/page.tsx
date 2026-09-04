@@ -11,7 +11,7 @@ function PaySuccessContent() {
   const searchParams = useSearchParams()
   const orderId = params.orderId as string
 
-  // Tap redirects with ?id=<payment_id>&status=paid&message=...
+  // Paylink redirects with ?id=<payment_id>&status=paid&message=...
   const paymentId = searchParams.get('id') ?? undefined
   const paymentStatus = searchParams.get('status')
 

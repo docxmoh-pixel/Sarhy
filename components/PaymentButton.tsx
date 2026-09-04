@@ -29,8 +29,8 @@ export default function PaymentButton({ orderId, onSuccess, onError }: PaymentBu
         throw new Error(orderError?.message || 'Failed to fetch order');
       }
 
-      // استدعاء API لإنشاء طلب دفع في Tap
-      const response = await fetch('/api/payment/create-charge', {
+      // استدعاء API لإنشاء طلب دفع في Paylink
+      const response = await fetch('/api/payment/create-invoice', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

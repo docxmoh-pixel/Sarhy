@@ -1,20 +1,20 @@
-# إعداد بوابة الدفع Tap (goSell)
+# إعداد بوابة الدفع Paylink
 
 ## المتغيرات البيئية المطلوبة
 
 أضف المتغيرات التالية إلى ملف `.env`:
 
 ```env
-TAP_SECRET_KEY=your_tap_secret_key_here
-NEXT_PUBLIC_TAP_PUBLIC_KEY=your_tap_public_key_here
+PAYLINK_SECRET_KEY=your_paylink_secret_key_here
+PAYLINK_APP_ID=your_paylink_app_id_here
 NEXT_PUBLIC_BASE_URL=https://www.sarhy.com
 ```
 
-## كيفية الحصول على مفاتيح Tap
+## كيفية الحصول على مفاتيح Paylink
 
-1. سجل في [Tap Payments](https://www.tap.company/sa/en/signup)
+1. سجل في [Paylink](https://paylink.sa/)
 2. انتقل إلى Settings > API Keys
-3. انسخ المفتاح السري (Secret Key) والمفتاح العام (Public Key)
+3. انسخ المفتاح السري (Secret Key) ومعرف التطبيق (App ID)
 4. أضفهما إلى `.env`
 
 ## العملة المدعومة
@@ -28,7 +28,6 @@ NEXT_PUBLIC_BASE_URL=https://www.sarhy.com
 - Apple Pay
 - بطاقات الائتمان (Visa, Mastercard)
 - STC Pay
-- KNET
 
 ## معايير البنك المركزي السعودي
 

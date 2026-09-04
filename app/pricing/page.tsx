@@ -204,7 +204,7 @@ function PricingContent() {
                   </tr>
                   <tr>
                     <td className="p-4 text-muted-foreground">
-                      {language === "ar" ? "رسوم بوابة الدفع (Tap)" : "Payment Gateway Fee (Tap)"}
+                      {language === "ar" ? "رسوم بوابة الدفع (Paylink)" : "Payment Gateway Fee (Paylink)"}
                     </td>
                     <td className="p-4 text-center font-semibold">~3.5%</td>
                     <td className="p-4 text-end font-semibold">

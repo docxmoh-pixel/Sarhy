@@ -15,10 +15,6 @@ import { Label } from "@/components/ui/label"
 
 type Step = "address" | "review" | "payment"
 
-declare global {
-  interface Window { tapjs: any }
-}
-
 function CheckoutContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -160,8 +156,8 @@ function CheckoutContent() {
       const { error: itemsError } = await supabase.from("order_items").insert(orderItems)
       if (itemsError) throw new Error('order_items: ' + itemsError.message)
 
-      // 3. إنشاء charge في Tap
-      const response = await fetch('/api/payment/create-charge', {
+      // 3. إنشاء invoice في Paylink
+      const response = await fetch('/api/payment/create-invoice', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -172,12 +168,12 @@ function CheckoutContent() {
 
       if (!response.ok) {
         const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to create payment charge')
+        throw new Error(errorData.error || 'Failed to create payment invoice')
       }
 
       const { url } = await response.json()
       
-      // 4. التوجيه إلى صفحة الدفع الخاصة بـ Tap
+      // 4. التوجيه إلى صفحة الدفع الخاصة بـ Paylink
       window.location.href = url
 
     } catch (err: any) {
@@ -499,8 +495,8 @@ function CheckoutContent() {
                 <>
                   <p className="text-sm text-muted-foreground">
                     {isAr
-                      ? "ادفع بأمان عبر مدى، فيزا، ماستركارد، Apple Pay، أو STC Pay."
-                      : "Pay securely via Mada, Visa, Mastercard, Apple Pay, or STC Pay."}
+                      ? "ادفع بأمان عبر Paylink."
+                      : "Pay securely via Paylink."}
                   </p>
                   <div className="flex flex-wrap gap-3">
                     <Button variant="outline" onClick={() => setStep("review")} disabled={submitting || qrLoading}>
