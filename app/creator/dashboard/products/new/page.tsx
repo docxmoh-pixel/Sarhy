@@ -131,14 +131,14 @@ export default function NewProductPage() {
         return;
       }
 
-      // Require at least images or file (one or the other, not both)
-      const hasImages = formData.images && formData.images.length > 0;
+      // Note: Image upload temporarily disabled due to missing 'images' column
+      // Only file upload is supported for now
       const hasFile = formData.file !== null;
       
-      if (!hasImages && !hasFile) {
+      if (!hasFile) {
         const errorMsg = language === "ar" 
-          ? "يرجى رفع صور المنتج أو ملف المنتج (واحد منهما على الأقل)" 
-          : "Please upload product images or product file (at least one)";
+          ? "يرجى رفع ملف المنتج" 
+          : "Please upload product file";
         alert(errorMsg);
         setLoading(false);
         return;
@@ -167,24 +167,9 @@ export default function NewProductPage() {
       // 1. رفع الصور إلى Supabase Storage
       const imageUrls: string[] = [];
       if (formData.images && formData.images.length > 0) {
-        console.log("Uploading images:", formData.images.length);
-        for (const image of formData.images) {
-          const ext = image.name.split('.').pop();
-          const path = `${user.id}/${Date.now()}-${Math.random().toString(36).substring(2)}.${ext}`;
-          console.log("Uploading image:", path);
-          const { error: uploadError } = await supabase.storage
-            .from('products')
-            .upload(path, image, { upsert: false });
-          if (uploadError) {
-            console.error("Image upload error:", uploadError);
-            throw new Error(`${language === "ar" ? "خطأ في رفع الصورة:" : "Image upload error:"} ${uploadError.message}`);
-          }
-          const { data: urlData } = supabase.storage
-            .from('products')
-            .getPublicUrl(path);
-          imageUrls.push(urlData.publicUrl);
-          console.log("Image uploaded successfully:", urlData.publicUrl);
-        }
+        console.log("Skipping image upload - images column not available in database");
+        // Note: Image upload functionality disabled due to missing 'images' column in database
+        // This should be implemented separately with proper database schema
       }
 
       // 2. رفع ملف المنتج الرقمي
@@ -220,7 +205,6 @@ export default function NewProductPage() {
         subcategory: subCategory,
         features: features.split('\n').filter((f: string) => f.trim()).join('|'),
         fulfillment_type: fulfillmentType,
-        images: imageUrls.length > 0 ? JSON.stringify(imageUrls) : null,
         product_file_url: productFileUrl,
       };
 
@@ -487,7 +471,7 @@ export default function NewProductPage() {
 
                   <div className="space-y-2">
                     <Label htmlFor="file">
-                      {language === "ar" ? "رفع ملف المنتج (الحد الأقصى 50 ميجابايت) - مطلوب إذا لم يتم رفع صور" : "Upload Product File (Max 50MB) - Required if no images uploaded"}
+                      {language === "ar" ? "رفع ملف المنتج (الحد الأقصى 50 ميجابايت) - مطلوب" : "Upload Product File (Max 50MB) - Required"}
                     </Label>
                     <div className="flex items-center gap-4">
                       <Input
@@ -505,7 +489,7 @@ export default function NewProductPage() {
 
                   <div className="space-y-2">
                     <Label htmlFor="images">
-                      {language === "ar" ? "رفع صور المنتج (حد أقصى 5 صور، 2 ميجابايت لكل صورة، 10 ميجابايت إجمالي) - مطلوب إذا لم يتم رفع ملف" : "Upload Product Images (Max 5 images, 2MB each, 10MB total) - Required if no file uploaded"}
+                      {language === "ar" ? "رفع صور المنتج (متوقف مؤقتًا - رفع الصور غير متاح حاليًا)" : "Upload Product Images (Temporarily disabled - image upload not currently available)"}
                     </Label>
                     <div className="flex items-center gap-4">
                       <Input
@@ -515,6 +499,7 @@ export default function NewProductPage() {
                         multiple
                         onChange={handleImagesChange}
                         className="rounded-xl"
+                        disabled
                       />
                       <Upload className="w-5 h-5 text-muted-foreground" />
                     </div>
@@ -686,7 +671,7 @@ export default function NewProductPage() {
                     onClick={() => setCurrentStep(currentStep + 1)}
                     disabled={
                       currentStep === 1 &&
-                      (!formData.name || !formData.description || !formData.price || !mainCategory || !subCategory || (formData.hasExpiry && !formData.expiryDate) || ((!formData.images || formData.images.length === 0) && !formData.file))
+                      (!formData.name || !formData.description || !formData.price || !mainCategory || !subCategory || (formData.hasExpiry && !formData.expiryDate) || !formData.file)
                     }
                     className="flex-1 gap-2 rounded-xl"
                   >
