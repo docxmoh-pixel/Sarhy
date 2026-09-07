@@ -252,6 +252,13 @@ export default function NewProductPage() {
         error = retryError;
       }
 
+      // If there's still an error, check if it's RLS related
+      if (error && (error.code === '42501' || error.message?.includes('row-level security'))) {
+        console.error("RLS policy error - user may not have INSERT permission");
+        console.error("Error details:", error);
+        throw new Error(`${language === "ar" ? "ليس لديك صلاحية إضافة منتجات. يرجى التحقق من صلاحيات حسابك." : "You don't have permission to add products. Please check your account permissions."}`);
+      }
+
       if (error) throw error;
 
       if (error) {
