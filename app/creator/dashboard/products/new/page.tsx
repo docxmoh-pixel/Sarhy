@@ -256,7 +256,10 @@ export default function NewProductPage() {
       if (error && (error.code === '42501' || error.message?.includes('row-level security'))) {
         console.error("RLS policy error - user may not have INSERT permission");
         console.error("Error details:", error);
-        throw new Error(`${language === "ar" ? "ليس لديك صلاحية إضافة منتجات. يرجى التحقق من صلاحيات حسابك." : "You don't have permission to add products. Please check your account permissions."}`);
+        const errorMsg = language === "ar" 
+          ? "ليس لديك صلاحية إضافة منتجات حاليًا. يرجى تنفيذ SQL الموجود في ملف MANUAL_RLS_FIX.sql في Supabase Dashboard لتصحيح سياسات الأمان." 
+          : "You don't have permission to add products currently. Please execute the SQL in MANUAL_RLS_FIX.sql file in Supabase Dashboard to fix security policies.";
+        throw new Error(errorMsg);
       }
 
       if (error) throw error;
