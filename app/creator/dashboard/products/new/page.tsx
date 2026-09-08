@@ -131,18 +131,9 @@ export default function NewProductPage() {
         return;
       }
 
-      // Require at least images or file (one or the other, not both)
-      const hasImages = formData.images && formData.images.length > 0;
-      const hasFile = formData.file !== null;
-      
-      if (!hasImages && !hasFile) {
-        const errorMsg = language === "ar" 
-          ? "يرجى رفع صور المنتج أو ملف المنتج (واحد منهما على الأقل)" 
-          : "Please upload product images or product file (at least one)";
-        alert(errorMsg);
-        setLoading(false);
-        return;
-      }
+      // Currently both uploads temporarily disabled (Storage RLS not configured)
+      // Product creation will work without files for now
+      console.log("Skipping file upload validation - Storage RLS not configured yet");
 
       // Validate fulfillment type
       if (!["digital", "service_remote"].includes(fulfillmentType)) {
@@ -164,54 +155,24 @@ export default function NewProductPage() {
 
       console.log("Starting product creation process...");
 
-      // 1. رفع الصور إلى Supabase Storage
+      // 1. رفع الصور إلى Supabase Storage (مؤقتاً معطل بسبب Storage RLS)
       const imageUrls: string[] = [];
       if (formData.images && formData.images.length > 0) {
-        console.log("Uploading images:", formData.images.length);
-        for (const image of formData.images) {
-          const ext = image.name.split('.').pop();
-          const path = `${user.id}/${Date.now()}-${Math.random().toString(36).substring(2)}.${ext}`;
-          console.log("Uploading image:", path);
-          const { error: uploadError } = await supabase.storage
-            .from('products')
-            .upload(path, image, { upsert: false });
-          if (uploadError) {
-            console.error("Image upload error:", uploadError);
-            throw new Error(`${language === "ar" ? "خطأ في رفع الصورة:" : "Image upload error:"} ${uploadError.message}`);
-          }
-          const { data: urlData } = supabase.storage
-            .from('products')
-            .getPublicUrl(path);
-          imageUrls.push(urlData.publicUrl);
-          console.log("Image uploaded successfully:", urlData.publicUrl);
-        }
+        console.log("Skipping image upload - Storage RLS not configured yet");
+        // TODO: Re-enable after Storage RLS is fixed
       }
 
-      // 2. رفع ملف المنتج الرقمي
+      // 2. رفع ملف المنتج الرقمي (مؤقتاً معطل بسبب Storage RLS)
       let productFileUrl: string | null = null;
       if (formData.file) {
-        console.log("Uploading product file:", formData.file.name);
-        const ext = formData.file.name.split('.').pop();
-        const path = `${user.id}/files/${Date.now()}.${ext}`;
-        const { error: fileUploadError } = await supabase.storage
-          .from('products')
-          .upload(path, formData.file, { upsert: false });
-        if (fileUploadError) {
-          console.error("File upload error:", fileUploadError);
-          throw new Error(`${language === "ar" ? "خطأ في رفع الملف:" : "File upload error:"} ${fileUploadError.message}`);
-        }
-        const { data: fileUrlData } = supabase.storage
-          .from('products')
-          .getPublicUrl(path);
-        productFileUrl = fileUrlData.publicUrl;
-        console.log("File uploaded successfully:", fileUrlData.publicUrl);
+        console.log("Skipping file upload - Storage RLS not configured yet");
+        // TODO: Re-enable after Storage RLS is fixed
       }
 
-      // 3. إدراج المنتج مع الصور والملف
+      // 3. إدراج المنتج في قاعدة البيانات
       console.log("Inserting product into database...");
       
-      // Build product data without images first (for compatibility)
-      const baseProductData = {
+      const productData = {
         title: formData.name,
         description: formData.description,
         price_halalas: Math.round(parseFloat(formData.price) * 100),
@@ -225,48 +186,21 @@ export default function NewProductPage() {
         product_file_url: productFileUrl,
       };
 
-      // Try to insert with images column first
-      let productData: any = { ...baseProductData };
-      if (imageUrls.length > 0) {
-        productData.images = JSON.stringify(imageUrls);
-      }
-
       console.log("Product data:", productData);
 
-      let error: any = null;
-      try {
-        const { error: insertError } = await supabase
-          .from("products")
-          .insert(productData);
-        error = insertError;
-      } catch (e) {
-        error = e;
-      }
+      const { error } = await supabase
+        .from("products")
+        .insert(productData);
 
-      // If images column doesn't exist, try without it
-      if (error && error.message && error.message.includes('images')) {
-        console.log("Images column not found, inserting without images field");
-        const { error: retryError } = await supabase
-          .from("products")
-          .insert(baseProductData);
-        error = retryError;
+      if (error) {
+        console.error("Insert error:", error);
+        throw error;
       }
-
-      // If there's still an error, check if it's RLS related
-      if (error && (error.code === '42501' || error.message?.includes('row-level security'))) {
-        console.error("RLS policy error - user may not have INSERT permission");
-        console.error("Error details:", error);
-        const errorMsg = language === "ar" 
-          ? "ليس لديك صلاحية إضافة منتجات حاليًا. يرجى تنفيذ SQL الموجود في ملف MANUAL_RLS_FIX.sql في Supabase Dashboard لتصحيح سياسات الأمان." 
-          : "You don't have permission to add products currently. Please execute the SQL in MANUAL_RLS_FIX.sql file in Supabase Dashboard to fix security policies.";
-        throw new Error(errorMsg);
-      }
-
-      if (error) throw error;
 
       if (error) {
         console.error("Database insert error:", error);
-        throw new Error(`${language === "ar" ? "خطأ في قاعدة البيانات:" : "Database error:"} ${error.message}`);
+        const errorMessage = (error as any)?.message || JSON.stringify(error);
+        throw new Error(`${language === "ar" ? "خطأ في قاعدة البيانات:" : "Database error:"} ${errorMessage}`);
       }
 
       console.log("Product created successfully!");
@@ -521,7 +455,7 @@ export default function NewProductPage() {
 
                   <div className="space-y-2">
                     <Label htmlFor="file">
-                      {language === "ar" ? "رفع ملف المنتج (الحد الأقصى 50 ميجابايت) - مطلوب إذا لم يتم رفع صور" : "Upload Product File (Max 50MB) - Required if no images uploaded"}
+                      {language === "ar" ? "رفع ملف المنتج (مؤقتًا معطل - Storage RLS غير مهيأ)" : "Upload Product File (Temporarily disabled - Storage RLS not configured)"}
                     </Label>
                     <div className="flex items-center gap-4">
                       <Input
@@ -529,6 +463,7 @@ export default function NewProductPage() {
                         type="file"
                         onChange={handleFileChange}
                         className="rounded-xl"
+                        disabled
                       />
                       <Upload className="w-5 h-5 text-muted-foreground" />
                     </div>
@@ -539,7 +474,7 @@ export default function NewProductPage() {
 
                   <div className="space-y-2">
                     <Label htmlFor="images">
-                      {language === "ar" ? "رفع صور المنتج (حد أقصى 5 صور، 2 ميجابايت لكل صورة، 10 ميجابايت إجمالي) - مطلوب إذا لم يتم رفع ملف" : "Upload Product Images (Max 5 images, 2MB each, 10MB total) - Required if no file uploaded"}
+                      {language === "ar" ? "رفع صور المنتج (مؤقتًا معطل - Storage RLS غير مهيأ)" : "Upload Product Images (Temporarily disabled - Storage RLS not configured)"}
                     </Label>
                     <div className="flex items-center gap-4">
                       <Input
@@ -549,6 +484,7 @@ export default function NewProductPage() {
                         multiple
                         onChange={handleImagesChange}
                         className="rounded-xl"
+                        disabled
                       />
                       <Upload className="w-5 h-5 text-muted-foreground" />
                     </div>
@@ -720,7 +656,7 @@ export default function NewProductPage() {
                     onClick={() => setCurrentStep(currentStep + 1)}
                     disabled={
                       currentStep === 1 &&
-                      (!formData.name || !formData.description || !formData.price || !mainCategory || !subCategory || (formData.hasExpiry && !formData.expiryDate) || ((!formData.images || formData.images.length === 0) && !formData.file))
+                      (!formData.name || !formData.description || !formData.price || !mainCategory || !subCategory || (formData.hasExpiry && !formData.expiryDate))
                     }
                     className="flex-1 gap-2 rounded-xl"
                   >
