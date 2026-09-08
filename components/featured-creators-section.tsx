@@ -17,7 +17,7 @@ export function FeaturedCreatorsSection() {
     const supabase = createClient()
     supabase
       .from("seller_profiles")
-      .select("id, user_id, store_name, bio, avatar_url, cover_url, is_verified, product_count")
+      .select("id, store_name, bio, avatar_url, cover_url, is_verified, product_count")
       .limit(4)
       .then(({ data }) => {
         setCreators(data || [])

@@ -19,7 +19,7 @@ export function TrendingSection() {
     const supabase = createClient()
     supabase
       .from("products")
-      .select("id, title, description, price_halalas, images, category, subcategory, seller_id")
+      .select("id, title, description, price_halalas, category, subcategory, seller_id")
       .eq("is_published", true)
       .order("created_at", { ascending: false })
       .limit(6)

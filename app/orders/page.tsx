@@ -21,7 +21,7 @@ function OrdersContent() {
       if (!user) { router.replace("/auth/login"); return }
       supabase
         .from("orders")
-        .select("*, order_items(*, products(title, price_halalas, images))")
+        .select("*, order_items(*, products(title, price_halalas))")
         .eq("user_id", user.id)
         .order("created_at", { ascending: false })
         .then(({ data }) => {
