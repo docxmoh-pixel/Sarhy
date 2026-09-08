@@ -57,11 +57,30 @@ export async function POST(request: NextRequest) {
     email = email || 'customer@example.com'
     phone = phone || '500000000'
 
+    // Paylink auth: exchange app id + secret for a bearer token
+    const authResponse = await fetch('https://paylink.sa/api/auth', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ api_number: appId, secret_key: secretKey }),
+    })
+
+    if (!authResponse.ok) {
+      const authErrorText = await authResponse.text()
+      console.error('[create-invoice] Paylink auth failed:', authResponse.status, authErrorText.slice(0, 200))
+      return NextResponse.json({ error: 'Paylink authentication failed' }, { status: 502 })
+    }
+
+    const { access_token: paylinkToken } = await authResponse.json()
+    if (!paylinkToken) {
+      console.error('[create-invoice] Paylink auth returned no token')
+      return NextResponse.json({ error: 'Paylink authentication failed' }, { status: 502 })
+    }
+
     // Create invoice in Paylink
     const paylinkResponse = await fetch('https://paylink.sa/api/createInvoice', {
       method: 'POST',
       headers: {
-        'Authorization': secretKey,
+        'Authorization': `Bearer ${paylinkToken}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
