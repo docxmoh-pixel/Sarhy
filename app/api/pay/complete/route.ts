@@ -63,24 +63,34 @@ export async function POST(request: NextRequest) {
 
     console.log('[pay/complete] order marked paid ✓')
 
-    // 2. Clear buyer's cart
+    // 2. إزالة المنتجات المدفوعة فقط من سلة المشتري — غير المدفوع يبقى في السلة
     if (order.user_id) {
-      const { error: cartError } = await supabase
-        .from('cart_items')
-        .delete()
-        .eq('user_id', order.user_id)
-      if (cartError) console.error('[pay/complete] cart clear error:', cartError)
-      else console.log('[pay/complete] cart cleared ✓')
+      const { data: orderItems } = await supabase
+        .from('order_items')
+        .select('product_id')
+        .eq('order_id', order_id)
+
+      const productIds = [...new Set((orderItems ?? []).map((i: any) => i.product_id).filter(Boolean))]
+
+      if (productIds.length > 0) {
+        const { error: cartError } = await supabase
+          .from('cart_items')
+          .delete()
+          .eq('user_id', order.user_id)
+          .in('product_id', productIds)
+        if (cartError) console.error('[pay/complete] cart clear error:', cartError)
+        else console.log('[pay/complete] purchased items removed from cart ✓')
+      }
     }
 
     // 3. Notify each unique seller
-    const { data: orderItems } = await supabase
+    const { data: orderItemsForNotify } = await supabase
       .from('order_items')
       .select('product_id')
       .eq('order_id', order_id)
 
-    if (orderItems && orderItems.length > 0) {
-      const productIds = orderItems.map((i: any) => i.product_id)
+    if (orderItemsForNotify && orderItemsForNotify.length > 0) {
+      const productIds = orderItemsForNotify.map((i: any) => i.product_id)
       const { data: products } = await supabase
         .from('products')
         .select('seller_id')

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, Suspense } from "react"
+import { useState, useEffect, useRef, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
@@ -12,21 +12,18 @@ import { useLanguage } from "@/lib/language"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Checkbox } from "@/components/ui/checkbox"
 
 type Step = "address" | "review" | "payment"
 
 function CheckoutContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const { items, total, isLoading: cartLoading } = useCart()
+  const { items, isLoading: cartLoading } = useCart()
   const { language } = useLanguage()
   const isAr = language === "ar"
   const supabase = createClient()
 
-  const needsAddress = items.some(
-    (item) => item.products?.fulfillment_type === "physical_shipping" || item.products?.fulfillment_type === "service_onsite"
-  )
-  
   // Check for non-digital products
   const hasNonDigitalProducts = items.some(
     (item) => item.products?.fulfillment_type === "physical_shipping" || item.products?.fulfillment_type === "service_onsite"
@@ -51,6 +48,39 @@ function CheckoutContent() {
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null)
   const [useNewAddress, setUseNewAddress] = useState(false)
   const [isOtherRecipient, setIsOtherRecipient] = useState(false)
+
+  // اختيار المنتجات للدفع — الكل محدد افتراضيًا، والمستخدم يقرر
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const knownIdsRef = useRef<Set<string>>(new Set())
+  useEffect(() => {
+    setSelectedIds(prev => {
+      const next = new Set(prev)
+      for (const item of items) {
+        if (!knownIdsRef.current.has(item.id)) {
+          knownIdsRef.current.add(item.id)
+          next.add(item.id)
+        }
+      }
+      return next
+    })
+  }, [items])
+
+  const toggleItem = (itemId: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev)
+      if (next.has(itemId)) next.delete(itemId)
+      else next.add(itemId)
+      return next
+    })
+  }
+
+  const selectedItems = items.filter((item) => selectedIds.has(item.id))
+  const selectedTotal = selectedItems.reduce((sum, item) => sum + (item.products?.price_halalas || 0) * item.quantity, 0)
+  const showSelectors = items.length > 1
+
+  const needsAddress = selectedItems.some(
+    (item) => item.products?.fulfillment_type === "physical_shipping" || item.products?.fulfillment_type === "service_onsite"
+  )
 
 
   const formatSAR = (halalas: number) => (halalas / 100).toFixed(2)
@@ -130,7 +160,7 @@ function CheckoutContent() {
       const { data: { user } } = await supabase.auth.getUser()
       const userEmail = user?.email || ''
 
-      // 1. إنشاء الطلب في Supabase
+      // 1. إنشاء الطلب في Supabase (للمنتجات المحددة فقط)
       const { data: order, error: orderError } = await supabase
         .from("orders")
         .insert({
@@ -138,7 +168,7 @@ function CheckoutContent() {
           buyer_name: address.full_name,
           buyer_email: userEmail,
           buyer_phone: address.phone,
-          total_halalas: total,
+          total_halalas: selectedTotal,
           status: "pending",
         })
         .select()
@@ -147,7 +177,7 @@ function CheckoutContent() {
       if (orderError || !order) throw new Error(orderError?.message || "Order creation failed")
 
       // 2. إدراج عناصر الطلب
-      const orderItems = items.map((item) => ({
+      const orderItems = selectedItems.map((item) => ({
         order_id: order.id,
         product_id: item.product_id,
         quantity: item.quantity,
@@ -161,7 +191,7 @@ function CheckoutContent() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          amount: Math.round(total),
+          amount: Math.round(selectedTotal),
           order_id: order.id,
         }),
       })
@@ -194,7 +224,7 @@ function CheckoutContent() {
           buyer_name: address.full_name,
           buyer_email: "",
           buyer_phone: address.phone,
-          total_halalas: total,
+          total_halalas: selectedTotal,
           status: "pending",
         })
         .select()
@@ -202,7 +232,7 @@ function CheckoutContent() {
 
       if (orderError || !order) throw new Error(orderError?.message || "Order creation failed")
 
-      const orderItems = items.map((item) => ({
+      const orderItems = selectedItems.map((item) => ({
         order_id: order.id,
         product_id: item.product_id,
         quantity: item.quantity,
@@ -451,8 +481,21 @@ function CheckoutContent() {
             {step === "review" && (
               <div className="p-6 rounded-2xl border border-border bg-card space-y-4">
                 <h2 className="font-semibold mb-2">{isAr ? "مراجعة الطلب" : "Review Order"}</h2>
+                {showSelectors && (
+                  <p className="text-sm text-muted-foreground">
+                    {isAr ? "حدد المنتجات التي تريد دفعها الآن — غير المحدد يبقى في سلتك." : "Select the products you want to pay for now — the rest stay in your cart."}
+                  </p>
+                )}
                 {items.map((item) => (
                   <div key={item.id} className="flex justify-between items-center py-2 border-b border-border last:border-0">
+                    {showSelectors && (
+                      <Checkbox
+                        checked={selectedIds.has(item.id)}
+                        onCheckedChange={() => toggleItem(item.id)}
+                        className="mx-2"
+                        aria-label={item.products?.title}
+                      />
+                    )}
                     <div>
                       <p className="font-medium">{item.products?.title}</p>
                       <p className="text-sm text-muted-foreground">
@@ -477,11 +520,20 @@ function CheckoutContent() {
                       {isAr ? "رجوع" : "Back"}
                     </Button>
                   )}
-                  <Button onClick={() => { setStep("payment") }} className="gap-2">
+                  <Button
+                    onClick={() => { setStep("payment") }}
+                    disabled={selectedItems.length === 0}
+                    className="gap-2"
+                  >
                     {isAr ? "متابعة للدفع" : "Continue to Payment"}
                     <Arrow className="w-4 h-4" />
                   </Button>
                 </div>
+                {selectedItems.length === 0 && (
+                  <p className="text-sm text-destructive">
+                    {isAr ? "حدد منتجًا واحدًا على الأقل للدفع." : "Select at least one product to pay."}
+                  </p>
+                )}
               </div>
             )}
 
@@ -532,16 +584,19 @@ function CheckoutContent() {
             <div className="sticky top-28 p-6 rounded-2xl border border-border bg-card space-y-4">
               <h2 className="font-semibold">{isAr ? "ملخص الطلب" : "Order Summary"}</h2>
               <div className="space-y-2 text-sm">
-                {items.map((item) => (
-                  <div key={item.id} className="flex justify-between text-muted-foreground">
-                    <span className="line-clamp-1">{item.products?.title} × {item.quantity}</span>
-                    <span>{formatSAR((item.products?.price_halalas || 0) * item.quantity)}</span>
-                  </div>
-                ))}
+                {items.map((item) => {
+                  const isSelected = selectedIds.has(item.id)
+                  return (
+                    <div key={item.id} className={`flex justify-between ${isSelected ? "text-muted-foreground" : "text-muted-foreground/50 line-through"}`}>
+                      <span className="line-clamp-1">{item.products?.title} × {item.quantity}</span>
+                      <span>{formatSAR((item.products?.price_halalas || 0) * item.quantity)}</span>
+                    </div>
+                  )
+                })}
               </div>
               <div className="border-t border-border pt-4 flex justify-between font-bold text-lg">
                 <span>{isAr ? "الإجمالي" : "Total"}</span>
-                <span className="text-primary">{formatSAR(total)} {isAr ? "ر.س" : "SAR"}</span>
+                <span className="text-primary">{formatSAR(selectedTotal)} {isAr ? "ر.س" : "SAR"}</span>
               </div>
             </div>
           </div>

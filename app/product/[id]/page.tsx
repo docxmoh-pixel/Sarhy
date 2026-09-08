@@ -18,7 +18,8 @@ import {
   BadgeCheck,
   MessageCircle,
   Flag,
-  AlertCircle
+  AlertCircle,
+  CreditCard
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useLanguage } from "@/lib/language"
@@ -40,7 +41,7 @@ function ProductContent() {
   const [reportDescription, setReportDescription] = useState("")
   const [submittingReport, setSubmittingReport] = useState(false)
   const [sellerName, setSellerName] = useState<string | null>(null)
-  const { addToCart, isInCart, isLoading } = useCart()
+  const { addToCart, isInCart, isLoading, items: cartItems } = useCart()
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -271,6 +272,16 @@ function ProductContent() {
                           ? (language === "ar" ? "في السلة ✓" : "In Cart ✓")
                           : (language === "ar" ? "أضف للسلة" : "Add to Cart")
                       }
+                    </Button>
+                  )}
+                  {cartItems && cartItems.length > 0 && !(!canPurchase || isExpired) && (
+                    <Button
+                      variant="outline"
+                      className="gap-2 border-primary/40 text-primary hover:bg-primary/5"
+                      onClick={() => router.push("/checkout")}
+                    >
+                      <CreditCard className="w-4 h-4" />
+                      {language === "ar" ? "الانتقال إلى الدفع" : "Go to Checkout"}
                     </Button>
                   )}
                   <Button
