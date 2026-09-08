@@ -17,7 +17,7 @@ export function FeaturedCreatorsSection() {
     const supabase = createClient()
     supabase
       .from("seller_profiles")
-      .select("id, store_name, bio, avatar_url, cover_url, is_verified, product_count")
+      .select("id, store_name, store_slug, bio, logo_url, verified")
       .limit(4)
       .then(({ data }) => {
         setCreators(data || [])
@@ -69,16 +69,16 @@ export function FeaturedCreatorsSection() {
                 >
                   <div className="group glass rounded-2xl overflow-hidden card-hover">
                     <div className="relative h-32 overflow-hidden bg-gradient-to-br from-primary/10 to-accent/10">
-                      {creator.cover_url && (
-                        <Image src={creator.cover_url} alt="" fill className="object-cover transition-transform duration-500 group-hover:scale-110" />
+                      {creator.logo_url && (
+                        <Image src={creator.logo_url} alt="" fill className="object-cover transition-transform duration-500 group-hover:scale-110" />
                       )}
                       <div className="absolute inset-0 bg-gradient-to-t from-card to-transparent" />
                     </div>
 
                     <div className="relative -mt-12 px-5">
                       <div className="relative w-24 h-24 rounded-2xl overflow-hidden border-4 border-card bg-muted/30">
-                        {creator.avatar_url ? (
-                          <Image src={creator.avatar_url} alt={creator.store_name || ""} fill className="object-cover" />
+                        {creator.logo_url ? (
+                          <Image src={creator.logo_url} alt={creator.store_name || ""} fill className="object-cover" />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center">
                             <Users className="w-8 h-8 text-muted-foreground/50" />
@@ -92,21 +92,15 @@ export function FeaturedCreatorsSection() {
                         <h3 className="font-semibold text-lg line-clamp-1">
                           {creator.store_name || (language === "ar" ? "مبدع" : "Creator")}
                         </h3>
-                        {creator.is_verified && (
+                        {creator.verified && (
                           <BadgeCheck className="w-5 h-5 text-primary shrink-0" />
                         )}
                       </div>
                       <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
                         {creator.bio || (language === "ar" ? "مبدع رقمي" : "Digital Creator")}
                       </p>
-                      {creator.product_count > 0 && (
-                        <div className="flex items-center gap-1 text-xs text-muted-foreground mb-4">
-                          <Package className="w-3.5 h-3.5" />
-                          <span>{creator.product_count} {language === "ar" ? "منتج" : "products"}</span>
-                        </div>
-                      )}
                       <Link
-                        href={`/creator/${creator.user_id}`}
+                        href={`/${creator.store_slug}`}
                         className="block w-full text-center py-2 px-4 rounded-xl border border-border hover:bg-primary hover:text-primary-foreground hover:border-primary transition-colors text-sm font-medium"
                       >
                         {language === "ar" ? "زيارة المتجر" : "Visit Store"}

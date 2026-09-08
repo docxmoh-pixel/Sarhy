@@ -221,6 +221,7 @@ export default function NewProductPage() {
         subcategory: subCategory,
         features: features.split('\n').filter((f: string) => f.trim()).join('|'),
         fulfillment_type: fulfillmentType,
+        product_file_url: productFileUrl,
       };
 
       console.log("Product data:", productData);
