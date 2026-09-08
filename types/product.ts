@@ -5,7 +5,7 @@ export interface Product {
   description?: string;
   category?: string;
   subcategory?: string;
-  images?: string[];
+  product_files?: { storage_path: string; original_name?: string }[];
   fulfillment_type?: string;
 }
 

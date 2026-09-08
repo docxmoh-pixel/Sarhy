@@ -226,13 +226,26 @@ export default function NewProductPage() {
 
       console.log("Product data:", productData);
 
-      const { error } = await supabase
+      const { data: insertedProduct, error } = await supabase
         .from("products")
-        .insert(productData);
+        .insert(productData)
+        .select("id")
+        .single();
 
-      if (error) {
+      if (error || !insertedProduct) {
         console.error("Insert error:", error);
-        throw error;
+        throw error ?? new Error("فشل إنشاء المنتج");
+      }
+
+      // 4. حفظ روابط الصور في جدول product_files (بدون عمود images)
+      if (imageUrls.length > 0) {
+        const rows = imageUrls.map((url, i) => ({
+          product_id: insertedProduct.id,
+          storage_path: url,
+          original_name: formData.images[i]?.name ?? `image-${i + 1}`,
+        }));
+        const { error: filesError } = await supabase.from("product_files").insert(rows);
+        if (filesError) console.error("product_files insert error:", filesError);
       }
 
       if (error) {

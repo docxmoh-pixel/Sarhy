@@ -24,7 +24,7 @@ export default function OrderSuccessPage({ params }: { params: Promise<{ orderId
           *,
           order_items (
             *,
-            products (*)
+            products (id, title, price_halalas, product_files (storage_path))
           )
         `)
         .eq('id', orderId)
@@ -145,9 +145,9 @@ export default function OrderSuccessPage({ params }: { params: Promise<{ orderId
               {order.order_items?.map((item: any) => (
                 <div key={item.id} className="flex items-center gap-4 p-4 bg-secondary/50 rounded-xl">
                   <div className="w-20 h-20 bg-muted rounded-xl overflow-hidden flex-shrink-0">
-                    {item.products?.images?.[0] ? (
+                    {item.products?.product_files?.[0]?.storage_path ? (
                       <Image
-                        src={item.products.images[0]}
+                        src={item.products.product_files[0].storage_path}
                         alt={item.products.title}
                         width={80}
                         height={80}

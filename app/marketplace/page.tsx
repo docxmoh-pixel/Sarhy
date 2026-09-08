@@ -55,7 +55,7 @@ function MarketplaceContent() {
     const supabase = createClient()
     let query = supabase
       .from("products")
-      .select("*")
+      .select("*, product_files(storage_path, original_name)")
       .eq("is_published", true)
 
     if (selectedCategory !== "all") query = query.eq("category", selectedCategory)
@@ -221,11 +221,9 @@ function MarketplaceContent() {
               )}
             >
               {filteredProducts.map((product, index) => {
-                const images = product.images
-                  ? typeof product.images === "string"
-                    ? JSON.parse(product.images)
-                    : product.images
-                  : []
+                const images: string[] = (product.product_files ?? [])
+                  .map((f: { storage_path: string }) => f.storage_path)
+                  .filter(Boolean)
                 
                 const isNonDigital = product.fulfillment_type === "physical_shipping" || product.fulfillment_type === "service_onsite"
 

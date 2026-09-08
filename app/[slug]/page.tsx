@@ -43,7 +43,7 @@ function StorePageContent() {
           // Fetch products by seller ID
           const { data: productsData, error: productsError } = await supabase
             .from("products")
-            .select("*")
+            .select("*, product_files(storage_path, original_name)")
             .eq("seller_id", profileData.id);
 
           if (productsError) {
@@ -166,9 +166,9 @@ function StorePageContent() {
                 {products.map((product) => (
                   <Card key={product.id} className="overflow-hidden hover:shadow-lg transition-shadow">
                     <div className="aspect-square bg-muted relative">
-                      {product.image_url ? (
+                      {product.product_files?.[0]?.storage_path ? (
                         <img
-                          src={product.image_url}
+                          src={product.product_files[0].storage_path}
                           alt={product.name}
                           className="w-full h-full object-cover"
                         />

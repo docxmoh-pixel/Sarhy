@@ -19,7 +19,7 @@ export function TrendingSection() {
     const supabase = createClient()
     supabase
       .from("products")
-      .select("id, title, description, price_halalas, category, subcategory, seller_id")
+      .select("id, title, description, price_halalas, category, subcategory, seller_id, product_files(storage_path)")
       .eq("is_published", true)
       .order("created_at", { ascending: false })
       .limit(6)
@@ -64,9 +64,9 @@ export function TrendingSection() {
                 </div>
               ))
             : products.map((product, index) => {
-                const images = product.images
-                  ? typeof product.images === "string" ? JSON.parse(product.images) : product.images
-                  : []
+                const images: string[] = (product.product_files ?? [])
+                  .map((f: { storage_path: string }) => f.storage_path)
+                  .filter(Boolean)
                 const price = product.price_halalas ? (product.price_halalas / 100).toFixed(2) : "0.00"
                 const inCart = isInCart(product.id)
 

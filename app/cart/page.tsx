@@ -52,9 +52,9 @@ export default function CartPage() {
           <div className="lg:col-span-2 space-y-4">
             {items.map((item) => {
               const product = item.products
-              const images = product?.images
-                ? (typeof product.images === "string" ? JSON.parse(product.images) : product.images)
-                : []
+              const images: string[] = (product?.product_files ?? [])
+                .map((f: { storage_path: string }) => f.storage_path)
+                .filter(Boolean)
               const lineTotal = (product?.price_halalas || 0) * item.quantity
 
               return (

@@ -20,7 +20,7 @@ export default function ProductDetailsPage({ params }: { params: Promise<{ id: s
       setLoading(true);
       const { data, error } = await supabase
         .from('products')
-        .select('*')
+        .select('*, product_files(storage_path, original_name)')
         .eq('id', id)
         .single();
 
@@ -61,9 +61,9 @@ export default function ProductDetailsPage({ params }: { params: Promise<{ id: s
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Product Image */}
           <div className="relative aspect-square bg-gradient-to-br from-primary/10 to-primary/5 rounded-2xl overflow-hidden">
-            {product.images && product.images.length > 0 ? (
+            {product.product_files?.[0]?.storage_path ? (
               <Image
-                src={product.images[0]}
+                src={product.product_files[0].storage_path}
                 alt={product.title}
                 fill
                 className="object-cover"

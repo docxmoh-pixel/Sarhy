@@ -49,7 +49,7 @@ function ProductContent() {
         const supabase = createClient()
         const { data: productData, error } = await supabase
           .from("products")
-          .select("*")
+          .select("*, product_files(storage_path, original_name)")
           .eq("id", params.id)
           .single()
 
@@ -109,7 +109,9 @@ function ProductContent() {
 
   const priceInSAR = product.price_halalas ? (product.price_halalas / 100).toFixed(2) : "0.00"
   const features = product.features ? product.features.split('|').filter((f: string) => f.trim()) : []
-  const images = product.images ? JSON.parse(product.images) : []
+  const images: string[] = (product.product_files ?? [])
+    .map((f: { storage_path: string }) => f.storage_path)
+    .filter(Boolean)
   const canPurchase = product.is_published
   const isExpired = product.has_expiry && product.expiry_date ? new Date(product.expiry_date) < new Date() : false
 

@@ -21,7 +21,7 @@ function OrdersContent() {
       if (!user) { router.replace("/auth/login"); return }
       supabase
         .from("orders")
-        .select("*, order_items(*, products(title, price_halalas))")
+        .select("*, order_items(*, products(title, price_halalas, product_files(storage_path)))")
         .eq("user_id", user.id)
         .order("created_at", { ascending: false })
         .then(({ data }) => {
@@ -40,16 +40,6 @@ function OrdersContent() {
     status === "paid"
       ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
       : "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-500"
-
-  const getImageUrl = (images: any): string | null => {
-    if (!images) return null
-    try {
-      const parsed = typeof images === "string" ? JSON.parse(images) : images
-      return Array.isArray(parsed) && parsed.length > 0 ? parsed[0] : null
-    } catch {
-      return null
-    }
-  }
 
   const orderTotal = (items: any[]): number =>
     items?.reduce((sum, item) => sum + (item.unit_price_halalas ?? item.products?.price_halalas ?? 0) * (item.quantity ?? 1), 0) ?? 0
@@ -115,7 +105,7 @@ function OrdersContent() {
                   <div className="space-y-3">
                     {items.map((item, i) => {
                       const product = item.products
-                      const imageUrl = getImageUrl(product?.images)
+                      const imageUrl = product?.product_files?.[0]?.storage_path ?? null
                       const price = ((item.unit_price_halalas ?? product?.price_halalas ?? 0) / 100).toFixed(2)
                       const qty = item.quantity ?? 1
 

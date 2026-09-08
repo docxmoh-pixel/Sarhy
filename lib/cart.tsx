@@ -52,7 +52,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     const productIds = [...new Set(cartRows.map((r) => r.product_id))]
     const { data: products } = await supabase
       .from("products")
-      .select("*")
+      .select("*, product_files(storage_path, original_name)")
       .in("id", productIds)
 
     setItems(

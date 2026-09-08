@@ -40,7 +40,7 @@ export default function CategoryPage({ params }: { params: Promise<{ section: st
       // Fetch products by category or subcategory
       const { data, error } = await supabase
         .from('products')
-        .select('*')
+        .select('*, product_files(storage_path, original_name)')
         .or(`category.eq.${category},subcategory.eq.${category}`);
 
       if (data) {
@@ -80,9 +80,9 @@ export default function CategoryPage({ params }: { params: Promise<{ section: st
               <div key={product.id} className="bg-card border border-border rounded-2xl p-3 shadow-sm hover:shadow-md transition-all flex flex-col">
                 {/* الصورة - أبرز عنصر */}
                 <div className="relative h-56 w-full mb-4 overflow-hidden rounded-xl bg-gradient-to-br from-primary/10 to-primary/5">
-                  {product.images && product.images.length > 0 ? (
+                  {product.product_files?.[0]?.storage_path ? (
                     <Image
-                      src={product.images[0]}
+                      src={product.product_files[0].storage_path}
                       alt={product.title}
                       fill
                       className="object-cover hover:scale-105 transition-transform duration-500"
