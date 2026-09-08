@@ -245,7 +245,7 @@ export default function NewProductPage() {
           original_name: formData.images[i]?.name ?? `image-${i + 1}`,
         }));
         const { error: filesError } = await supabase.from("product_files").insert(rows);
-        if (filesError) console.error("product_files insert error:", filesError);
+        if (filesError) throw filesError;
       }
 
       if (error) {
