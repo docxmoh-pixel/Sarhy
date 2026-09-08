@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase';
 import { useCart } from '@/lib/cart';
 import Image from 'next/image';
 import Link from 'next/link';
-import { ShoppingCart, Heart, ArrowLeft, Star, Download } from 'lucide-react';
+import { ShoppingCart, Heart, ArrowLeft, Star, Download, CreditCard } from 'lucide-react';
 
 export default function ProductDetailsPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
@@ -13,7 +13,7 @@ export default function ProductDetailsPage({ params }: { params: Promise<{ id: s
   const [product, setProduct] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const supabase = createClient();
-  const { addToCart } = useCart();
+  const { addToCart, items: cartItems } = useCart();
 
   useEffect(() => {
     async function fetchProduct() {
@@ -129,6 +129,15 @@ export default function ProductDetailsPage({ params }: { params: Promise<{ id: s
                 <ShoppingCart className="w-5 h-5" />
                 إضافة للسلة
               </button>
+              {cartItems && cartItems.length > 0 && (
+                <button
+                  onClick={() => router.push('/checkout')}
+                  className="flex-1 border border-primary/40 text-primary font-semibold py-4 rounded-xl hover:bg-primary/5 transition-all duration-200 flex items-center justify-center gap-2"
+                >
+                  <CreditCard className="w-5 h-5" />
+                  الانتقال إلى الدفع
+                </button>
+              )}
               <button className="w-14 h-14 bg-secondary text-secondary-foreground rounded-xl hover:bg-secondary/90 transition-all duration-200 flex items-center justify-center">
                 <Heart className="w-5 h-5" />
               </button>
